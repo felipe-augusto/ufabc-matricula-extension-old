@@ -16,6 +16,7 @@
   },
   "permissions": [
     "tabs",
+    "storage",
     "http://*/*",
     "https://*/*"
   ],
@@ -26,7 +27,12 @@
         "https://*/*"
       ],
       "js": [
+        "bower_components/jquery/dist/jquery.min.js",
+        "bower_components/toastr/toastr.min.js",
         "scripts/contentscript.js"
+      ],
+      "css" : [
+        "bower_components/toastr/toastr.min.css"
       ],
       "run_at": "document_end",
       "all_frames": false
