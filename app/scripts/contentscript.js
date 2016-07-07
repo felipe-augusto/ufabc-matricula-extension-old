@@ -1,6 +1,7 @@
 'use strict';
 
 var cursos = [];
+var last_disciplina;
 
 function getDisciplinas(url, i) {
     // entra na ficha para pegar o cr, ca e cp
@@ -27,22 +28,23 @@ function getDisciplinas(url, i) {
             };
             count += 1;
         }
-        
-        
+        // para ter certeza que as info de CR ja foram colocadas
+        $.get( "https://aluno.ufabc.edu.br" + url, function( data ) {
+            // porque i - 1?
+            cursos[i - 1].cursadas = data;
+            chrome.storage.local.set({"cursos": cursos});
+            toastr.info('Salvando disciplinas do curso de ' + cursos[i - 1].curso + ".");
+        });
     });
 
-    $.get( "https://aluno.ufabc.edu.br" + url, function( data ) {
-        // porque i - 1?
-        cursos[i - 1].cursadas = data;
-        chrome.storage.local.set({"cursos": cursos});
-        toastr.info('Salvando disciplinas do curso de ' + cursos[i - 1].curso + ".");
-    });
+    
 }
 
 window.addEventListener("load", function() {
 	var url = document.location.href;
 	// essa url mapeia a pagina principal da matricula da ufabc
     if(url.indexOf('aluno.ufabc.edu.br/fichas_individuais') != -1) {
+        toastr.info('A mágica começa agora...');
     	$("tbody").children().each(function (child) {
     		if ($(this).children('th').length == 0) {
     			// nao estamos no header da tabela

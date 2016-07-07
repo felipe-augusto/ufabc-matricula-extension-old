@@ -2,7 +2,10 @@
   "name": "ufabc-matricula",
   "private": true,
   "version": "0.0.0",
-  "dependencies": {},
+  "dependencies": {
+    "toastr": "^2.1.2",
+    "jquery": "^3.0.0"
+  },
   "devDependencies": {
     "chai": "^3.5.0",
     "mocha": "^2.5.3"
