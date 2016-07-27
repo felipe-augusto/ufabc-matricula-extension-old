@@ -1,8 +1,8 @@
 {
-  "name": "__MSG_appName__",
+  "name": "UFABC Matricula",
   "version": "0.0.1",
   "manifest_version": 2,
-  "description": "__MSG_appDescription__",
+  "description": "Adiciona funcionalidades novas ao sistema de matricula da UFABC.",
   "icons": {
     "16": "images/icon-16.png",
     "128": "images/icon-128.png"
@@ -29,6 +29,7 @@
       "js": [
         "bower_components/jquery/dist/jquery.min.js",
         "bower_components/toastr/toastr.min.js",
+        "bower_components/Chart.js/dist/Chart.js",
         "scripts/contentscript.js"
       ],
       "css" : [
@@ -45,5 +46,8 @@
     },
     "default_title": "UFABC Matricula",
     "default_popup": "popup.html"
-  }
+  },
+  "web_accessible_resources": [
+    "bower_components/*"
+  ]
 }

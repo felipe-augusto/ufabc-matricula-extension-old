@@ -9,9 +9,13 @@ Faça o download da extensão e instale as dependências:
 ```sh
 $ git clone https://github.com/fesnt/ufabc-matricula-extension.git
 $ cd ufabc-matricula-extension
-npm install
-bower install
+$ npm install
+$ bower install
 ```
 
 Abra o Google Chrome e navegue até `chrome://extensions/` e então clique no botão `Modo desenvolvedor`.
 Por fim clique em `Carregar extensão expandida...`, selecione o diretório: `/seu_diretorio/ufabc-matricula-extension/app` e pronto.
+
+## BUGS
+
+- [ ] Quando troca de usuario, ele usa os dados do login anterior
