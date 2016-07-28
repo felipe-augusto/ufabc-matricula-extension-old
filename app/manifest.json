@@ -28,8 +28,9 @@
       ],
       "js": [
         "bower_components/jquery/dist/jquery.min.js",
-        "bower_components/toastr/toastr.min.js",
         "bower_components/Chart.js/dist/Chart.js",
+        "bower_components/toastr/toastr.min.js",
+
         "scripts/contentscript.js"
       ],
       "css" : [
@@ -48,6 +49,8 @@
     "default_popup": "popup.html"
   },
   "web_accessible_resources": [
-    "bower_components/*"
+    "bower_components/*",
+    "images/*",
+    "styles/*"
   ]
 }

@@ -111,15 +111,23 @@ window.addEventListener('load', function() {
    if(url.indexOf('matricula.ufabc.edu.br/matricula') != -1) {
         // inject chart.js
         injectChart();
-        // $(".busca").parent().children(".col-md-6").removeClass("col-md-6").addClass("col-md-4")
+
+        //inject styles
+        injectStyles();
+
+        // append quantidade total de matriculas
+        appendMatriculas();
 
         toastr.info('Aplicando anabolizantes...');
         // cria elementos com filtros e da um append no documento
-        var filters = "<div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><input type='checkbox' id='removeCursadas'> Remover disciplinas cursadas<br><input type='checkbox' id='loadHelp'> Carregar Professores</div>";
+        var filters = "<div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><input type='checkbox' id='removeCursadas'> Remover disciplinas cursadas<br><input type='checkbox' id='loadHelp'> Carregar Professores<br><input type='checkbox' id='apenasMatriculadas'> Mostrar matérias selecionadas</div>";
 
         // poe filtros monstros e arruma para aparecer correto na tela
         $(".busca").parent().append(filters);
         $(".busca").parent().children(".col-md-6").removeClass("col-md-6").addClass("col-md-3");
+
+        // cria handler para matriculas selecionadas
+        criaHandlerSelecionadas();
 
         // cadastrar handler para click removeCursadas
         $( "#removeCursadas" ).click(function(e) {
@@ -159,7 +167,7 @@ window.addEventListener('load', function() {
                     }                
                 }
                 // pega a table principal de disciplinas
-                $("#disciplinasobrigatorias table tr td:nth-child(3)").each(function () {
+                $("table tr td:nth-child(3)").each(function () {
                     var el = $(this);
                     // tira apenas o nome da disciplina -> remove turma, turno e campus
                     var disciplina = el.text().split("-")[0];
@@ -170,32 +178,6 @@ window.addEventListener('load', function() {
                         el.parent().css('display', 'none');
                     };
                 });
-                // tabela de limitadas
-                $("#disciplinaslimitadas table tr td:nth-child(3)").each(function () {
-                    var el = $(this);
-                    // tira apenas o nome da disciplina -> remove turma, turno e campus
-                    var disciplina = el.text().split("-")[0];
-                    disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
-                    // verifica se ja foi cursada
-                    if (ja_cursadas[disciplina]) {
-                        el.parent().addClass("isCursada");
-                        el.parent().css('display', 'none');
-                    };
-                });
-                // tabela de livres
-                $("#disciplinaslivres table tr td:nth-child(3)").each(function () {
-                    var el = $(this);
-                    // tira apenas o nome da disciplina -> remove turma, turno e campus
-                    var disciplina = el.text().split("-")[0];
-                    disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
-                    // verifica se ja foi cursada
-                    if (ja_cursadas[disciplina]) {
-                        el.parent().addClass("isCursada");
-                        el.parent().css('display', 'none');
-                    };
-                });
-
-                //console.log(ja_cursadas);
             });
         });
 
@@ -221,45 +203,20 @@ window.addEventListener('load', function() {
                 for (var i = 0; i < disciplinas.length; i++) {
                     hash_disciplinas[disciplinas[i].disciplina + "@" + disciplinas[i].turma + "@" + disciplinas[i].turno +"@" + disciplinas[i].campus] = disciplinas[i];
                 };
-                // muito ineficiente
                 // pega a table principal de disciplinas
-                $("#disciplinasobrigatorias table tr td:nth-child(3)").each(function () {
+                $("table tr td:nth-child(3)").each(function () {
                     var el = $(this);
                     // transforma da mesma forma que hash foi feita
-                    var disciplina = el.text().split("-")[0];
-                    var turma = disciplina.substring(disciplina.lastIndexOf(" ")).replace(" ", "");
-                    disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
-                    
-
-                    var turno = el.text().split("(");
-                    var campus = turno[1].replace(")", "");
-                    if (turno[0].indexOf('atutino') != -1) {
-                        turno = "diurno";
-                    } else if (turno[0].indexOf('oturno') != -1) {
-                        turno = "noturno";
-                    }
-
-                    var search = disciplina + "@" + turma + "@" + turno + "@" + campus;
                     try {
-                        var item = hash_disciplinas[search].teoria_help;
-                        el.append('<div class="col-md-12 isHelp">Professor: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>');
-                        el.append('<div class="col-md-12 isHelp"><div class="col-md-3">CRA: ' + item.cr_aluno + '</div><div class="col-md-3">CRP: ' + item.cr_professor +'</div><div class="col-md-3">REP: ' + item.reprovacoes + '</div><div class="col-md-12 pie" data=' + JSON.stringify(item.pie) + '>PIE</div></div>')
+                        var disciplina = el.text().split("-")[0];
+                        var turma = disciplina.substring(disciplina.lastIndexOf(" ")).replace(" ", "");
+                        disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
+                        var turno = el.text().split("(");
+                        var campus = turno[1].replace(")", "");
                     } catch (err) {
-
+                        return;
                     }
 
-                });
-                // tabela das limitadas
-                $("#disciplinaslimitadas table tr td:nth-child(3)").each(function () {
-                    var el = $(this);
-                    // transforma da mesma forma que hash foi feita
-                    var disciplina = el.text().split("-")[0];
-                    var turma = disciplina.substring(disciplina.lastIndexOf(" ")).replace(" ", "");
-                    disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
-                    
-
-                    var turno = el.text().split("(");
-                    var campus = turno[1].replace(")", "");
                     if (turno[0].indexOf('atutino') != -1) {
                         turno = "diurno";
                     } else if (turno[0].indexOf('oturno') != -1) {
@@ -269,35 +226,8 @@ window.addEventListener('load', function() {
                     var search = disciplina + "@" + turma + "@" + turno + "@" + campus;
                     try {
                         var item = hash_disciplinas[search].teoria_help;
-                        el.append('<div class="col-md-12 isHelp">Professor: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>');
-                        el.append('<div class="col-md-12 isHelp"><div class="col-md-3">CRA: ' + item.cr_aluno + '</div><div class="col-md-3">CRP: ' + item.cr_professor +'</div><div class="col-md-3">REP: ' + item.reprovacoes + '</div></div>')
-                    } catch (err) {
-
-                    }
-
-                });
-                // tabela das livres
-                $("#disciplinaslivres table tr td:nth-child(3)").each(function () {
-                    var el = $(this);
-                    // transforma da mesma forma que hash foi feita
-                    var disciplina = el.text().split("-")[0];
-                    var turma = disciplina.substring(disciplina.lastIndexOf(" ")).replace(" ", "");
-                    disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
-                    
-
-                    var turno = el.text().split("(");
-                    var campus = turno[1].replace(")", "");
-                    if (turno[0].indexOf('atutino') != -1) {
-                        turno = "diurno";
-                    } else if (turno[0].indexOf('oturno') != -1) {
-                        turno = "noturno";
-                    }
-
-                    var search = disciplina + "@" + turma + "@" + turno + "@" + campus;
-                    try {
-                        var item = hash_disciplinas[search].teoria_help;
-                        el.append('<div class="col-md-12 isHelp">Professor: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>');
-                        el.append('<div class="col-md-12 isHelp"><div class="col-md-3">CRA: ' + item.cr_aluno + '</div><div class="col-md-3">CRP: ' + item.cr_professor +'</div><div class="col-md-3">REP: ' + item.reprovacoes + '</div></div>')
+                        el.append('<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Professor: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>');
+                        el.append('<div class="col-md-12 isHelp ufabc-extension-font"><div class="col-md-6 ufabc-well ufabc-green"><strong>CR ALUNO: </strong><span>' + item.cr_aluno + '</span></div><div class="col-md-6 ufabc-well ufabc-orange">CR PROFESSOR: ' + item.cr_professor +'</div><div class="col-md-6 ufabc-well ufabc-red">REPROVAÇÕES: ' + item.reprovacoes + '</div><div style="cursor: pointer;" class="col-md-6 pie ufabc-well ufabc-blue" data=' + JSON.stringify(item.pie) + '>ESTATÍSTICAS</div></div>')
                     } catch (err) {
 
                     }
@@ -306,30 +236,79 @@ window.addEventListener('load', function() {
 
                 createPieListener();
 
+                
             });
-        }); 
+        });
    }
    
 
 });
 
+function criaHandlerRefresh () {
+    // cria handler para refresh matriculas
+    $( "#refreshMatriculas" ).click(function(e) {
+        updateMatriculasTotal();
+    });
+}
+
+function criaHandlerSelecionadas() {
+    $( "#apenasMatriculadas" ).click(function(e) {
+        // se a checkbox for false, faz aparecer novamente os professores
+        if (!$(e.target).is(':checked')) {
+            $(".notSelecionada").css('display', '');
+            return;
+        };
+        // se ja tiver calculado nao refaz o trabalho
+        if ($(".notSelecionada").length > 0) {
+            $(".notSelecionada").css('display', 'none');
+            return;
+        }
+        // pega o id do aluno e suas disciplinas
+        getAlunoId(function (aluno_id) {
+            getMatriculas(aluno_id, function (matriculas) {
+                // constroi hash para iterar
+                var hash = {};
+                for (var i = 0; i < matriculas.length; i++) {
+                    hash[matriculas[i]] = true;
+                }
+                // itera no tr e compara
+                $('tr').each(function () {
+                    // value da tr (id da disciplina)
+                    var disciplina_id = $(this).attr('value');
+                    if (!hash[disciplina_id] && disciplina_id != null) {
+                        $(this).addClass("notSelecionada");
+                        $(this).css('display', 'none');
+                    }
+                });
+            })
+        })
+    })
+};
+
+
+// insire chart.js script na pagina de matricula
 function injectChart () {
     var s = document.createElement('script');
     s.src = chrome.extension.getURL('bower_components/Chart.js/dist/Chart.js');
-    s.onload = function() {
-        this.remove();
-    };
     (document.head || document.documentElement).appendChild(s); 
 }
 
+// injeta estilos proprios
+function injectStyles () {
+    var s = document.createElement("link");
+    s.href = chrome.extension.getURL("styles/main.css");
+    s.type = "text/css";
+    s.rel = "stylesheet";
+    document.head.appendChild(s); 
+}
 
-
+// cria o listener que escuta clickes para gerar pie charts
 function createPieListener () {
     $( ".pie" ).click(function(e) {
         // checa para ver se ja nao exista um canvas
         // se existir toogle it
-        if ($(e.target).children('canvas').length > 0) {
-            $(e.target).children('canvas').remove();
+        if ($(e.target).parent().children('canvas').length > 0) {
+            $(e.target).parent().children('canvas').remove();
         } else {
 
             try {
@@ -343,11 +322,12 @@ function createPieListener () {
     })
 }
 
+// cria canvas e em seguida o respectivo pie do elemento
 function createCanvas(el, item) {
     var node = document.createElement("canvas");
     var id  = new Date().getTime();
     node.id = id;
-    el.append(node);
+    el.parent().append(node);
 
     var ctx = $("#" + id.toString());
 
@@ -375,9 +355,61 @@ function createCanvas(el, item) {
             }]
     };
 
+
     var myChart = new Chart(ctx, {
         type: 'pie',
         data: data
     });
 }
 
+// pega o id do aluno (interno do matriculas)
+function getAlunoId(cb) {
+    $('script').each(function () {
+        var inside = $(this).text();
+        var test = "todasMatriculas";
+        if (inside.indexOf(test) != -1) {
+            var regex = /matriculas\[(.*)\]/;
+            var match = regex.exec(inside);
+            cb(parseInt(match[1]));
+        }
+    });
+}
+
+// pega a quantidade total de matriculas efetudas ate o momento
+function getMatriculasTotal(cb) {
+    // pega a quantidade total de matriculas
+    $.get('https://matricula.ufabc.edu.br/cache/matriculas.js', function (data) {
+        data = JSON.parse(data.replace('matriculas=', '').replace(';', ''));
+        var tamanho = Object.keys(data).length;
+        cb(tamanho);
+    });
+}
+
+// pega as matriculas de um determinado aluno
+function getMatriculas(aluno_id, cb) {
+    $.get('https://matricula.ufabc.edu.br/cache/matriculas.js', function (data) {
+        try {
+            data = JSON.parse(data.replace('matriculas=', '').replace(';', ''));
+            cb(data[aluno_id]);
+        } catch (err) {
+            // teria que tentar novamente
+        }
+        
+    });
+}
+
+// append no documento a quantidade total de matriculas
+function appendMatriculas() {
+    getMatriculasTotal(function (quantidade) {
+        var html = '<p class="bg-success">Foram efetuadas <span id="matriculasTotal">' + quantidade + '</span> matriculas até o momento. <img width="20px" id="refreshMatriculas" style="cursor: pointer;" src="' + chrome.extension.getURL('images/refresh_small.png') +'"/></p>';
+        $('form').before(html);
+         // cria handler para materias selecionadas
+        criaHandlerRefresh();
+    })
+}
+
+function updateMatriculasTotal() {
+    getMatriculasTotal(function (quantidade) {
+        $("#matriculasTotal").html(quantidade);
+    })
+}

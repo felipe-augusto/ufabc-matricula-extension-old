@@ -1,3 +1,58 @@
-body {
-  padding: 20px;
+.ufabc-extension-font {
+	font-size: 11px;
+	text-transform: uppercase;
+	font-weight: bold;
+}
+
+.ufabc-extension-prof {
+	font-size: 13px;
+	text-transform: uppercase;
+	font-weight: bold;
+}
+
+.ufabc-well {
+	min-height: 20px;
+    padding: 8px;
+    margin-bottom: 5px;
+    border: 1px solid;
+    border-radius: 4px;
+}
+
+.ufabc-well a {
+	color: #e74c3c !important;
+}
+
+.ufabc-orange {
+	color: #fff;
+    background-color: #f39c12;
+    border-color: #f39c12;
+}
+
+.ufabc-red {
+	color: #fff;
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+}
+
+.ufabc-green {
+	background-color: #18bc9c;
+	border-color: #18bc9c;
+	color: #fff
+}
+
+.ufabc-blue {
+	background-color: #3498db;
+	border-color: #3498db;
+	color: #fff
+}
+
+.ufabc-purple {
+	background-color: #4d3a7d;
+	border-color: #4d3a7d;
+	color: #fff
+}
+
+.ufabc-transparent {
+	background-color: transparent;
+	border-color: transparent;
 }
