@@ -1,8 +1,8 @@
 'use strict';
 
 var cursos = [];
-var last_disciplina;
-
+var last_disciplina
+var user = ""
 // pega as disciplinas com os professores
 
 chrome.storage.local.get('ufabc-extension-last', function(items) {
@@ -65,8 +65,10 @@ function getDisciplinas(url, i) {
         $.get( 'https://aluno.ufabc.edu.br' + url, function( data ) {
             // porque i - 1?
             cursos[i - 1].cursadas = data;
-            chrome.storage.local.set({'cursos': cursos});
-            toastr.info('Salvando disciplinas do curso de ' + cursos[i - 1].curso + '.');
+            var obj= {};
+            obj[user] = cursos;
+            chrome.storage.local.set(obj);
+            toastr.info('Salvando disciplinas do curso do ' + cursos[i - 1].curso + ' para o usuário ' + user + '.');
         });
     });
 
@@ -79,6 +81,8 @@ window.addEventListener('load', function() {
 	// essa url mapeia a pagina principal da ficha individual
     if(url.indexOf('aluno.ufabc.edu.br/fichas_individuais') != -1) {
         toastr.info('A mágica começa agora...');
+        // pega o email da ufabc
+        user = $('#top li').last().text().replace(/\s*/,'').split('|')[0].replace(' ','');
     	$('tbody').children().each(function (child) {
     		if ($(this).children('th').length == 0) {
     			// nao estamos no header da tabela
@@ -141,16 +145,21 @@ window.addEventListener('load', function() {
                 $(".isCursada").css('display', 'none');
                 return;
             }
+            // ve qual user esta pedindo as disciplinas
+            var current_user = $('#usuario_top').text().replace(/\s*/, '').split('|')[0].replace(' ', '');
+            toastr.info('Pegando disciplinas de ' + current_user + '.');
             // pega as disciplinas ja cursadas
-            chrome.storage.local.get('cursos', function (item) {
-                if (Object.keys(item).length == 0) {
+            chrome.storage.local.get(current_user, function (item) {
+                
+                if (item[current_user] == null) {
                     toastr.info('Nao temos as disciplinas que voce cursou! <a href="https://aluno.ufabc.edu.br/" target="_blank"> Clique aqui</a> para carrega-las.' );
                     return;
-                } 
+                }
+                item = item[current_user]; 
                 // guardar as disciplinas ja cursadas aqui
                 var ja_cursadas = {};
                 // se nao tiver nada precisa mandar ele cadastrar
-                var todas_cursadas = item.cursos[0].cursadas;
+                var todas_cursadas = item[0].cursadas;
                 for (var i = 0; i < todas_cursadas.length; i++) {
                     var codigo = todas_cursadas[i].codigo; // codigos mudam com o passar do tempo, nao rola
                     var conceito = todas_cursadas[i].conceito;
