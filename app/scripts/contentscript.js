@@ -42,25 +42,11 @@ function getDisciplinas(url, i) {
     var ficha_url = url.replace('.json', '');
     $.get( 'https://aluno.ufabc.edu.br' + ficha_url, function( data ) {
         var ficha_obj = $($.parseHTML(data));
-        var string = ficha_obj.find('.coeficientes').prop('outerHTML');
-        var coeficientes_regex = /.*(\d,\d{3}).*/g;
-        var match = true;
-        var count = 0;
-        while (match) {
-            match = coeficientes_regex.exec(string);
-            try {
-                string = string.replace(match[0], '').replace(' ', '');
-            } catch (err) {
-                break;
-            }
-            
-            if (count == 0) {
-                cursos[i - 1].cp = match[1];
-            } else if (count == 1) {
-                cursos[i - 1].cr = match[1];
-            };
-            count += 1;
-        }
+        var info = ficha_obj.find('.coeficientes tbody tr td');
+        cursos[i - 1].cp = parseFloat(info[0].innerText.replace(',', '.'));
+        cursos[i - 1].cr = parseFloat(info[1].innerText.replace(',', '.'));
+        cursos[i - 1].ca = parseFloat(info[2].innerText.replace(',', '.'));
+        console.log(cursos[i - 1]);
         // para ter certeza que as info de CR ja foram colocadas
         $.get( 'https://aluno.ufabc.edu.br' + url, function( data ) {
             // porque i - 1?
@@ -118,6 +104,9 @@ window.addEventListener('load', function() {
 
         //inject styles
         injectStyles();
+
+        // manda as informacoes para o servidor
+        sendAlunoData();
 
         // append quantidade total de matriculas
         appendMatriculas();
@@ -210,7 +199,7 @@ window.addEventListener('load', function() {
                 // cria uma hash
                 var hash_disciplinas = {}
                 for (var i = 0; i < disciplinas.length; i++) {
-                    hash_disciplinas[disciplinas[i].disciplina + "@" + disciplinas[i].turma + "@" + disciplinas[i].turno +"@" + disciplinas[i].campus] = disciplinas[i];
+                    hash_disciplinas[disciplinas[i].disciplina + "@" + disciplinas[i].turma + "@" + disciplinas[i].turno +"@" + disciplinas[i].campus.replace(' do Campo', '')] = disciplinas[i];
                 };
                 // pega a table principal de disciplinas
                 $("table tr td:nth-child(3)").each(function () {
@@ -268,10 +257,10 @@ function criaHandlerSelecionadas() {
             return;
         };
         // se ja tiver calculado nao refaz o trabalho
-        if ($(".notSelecionada").length > 0) {
-            $(".notSelecionada").css('display', 'none');
-            return;
-        }
+        // if ($(".notSelecionada").length > 0) {
+        //     $(".notSelecionada").css('display', 'none');
+        //     return;
+        // }
         // pega o id do aluno e suas disciplinas
         getAlunoId(function (aluno_id) {
             getMatriculas(aluno_id, function (matriculas) {
@@ -287,6 +276,18 @@ function criaHandlerSelecionadas() {
                     if (!hash[disciplina_id] && disciplina_id != null) {
                         $(this).addClass("notSelecionada");
                         $(this).css('display', 'none');
+                    } else if (hash[disciplina_id]) {
+                        var el = $(':nth-child(5)', this);
+                        // achamos uma disciplina
+                        $.post( "https://desolate-lake-30493.herokuapp.com/simula", {disciplina_id: disciplina_id, aluno_id : aluno_id}, function( data ) {
+                          var html = "(" + data.pos + "/" + data.total + ") ";
+                          if (el.children('span').length) {
+                            el.children('span').html(html);
+                          } else {
+                            el.html('<span style="color: red;">' + html + '</span> ' + el.text());
+                          }
+                          
+                        }); 
                     }
                 });
             })
@@ -420,5 +421,24 @@ function appendMatriculas() {
 function updateMatriculasTotal() {
     getMatriculasTotal(function (quantidade) {
         $("#matriculasTotal").html(quantidade);
+    })
+}
+
+function sendAlunoData () {
+    getAlunoId(function (aluno_id) {
+        var current_user = $('#usuario_top').text().replace(/\s*/, '').split('|')[0].replace(' ', '');
+        chrome.storage.local.get(current_user, function (item) {
+                if (item[current_user] != null) {
+                    item = item[current_user];
+                    // remove as disciplinas cursadas
+                    for (var i = 0; i < item.length; i++) {
+                        delete item[i].cursadas;
+                    }
+                    $.post( "https://desolate-lake-30493.herokuapp.com/test", {data: item, aluno_id : aluno_id}, function( data ) {
+                      $( ".result" ).html( data );
+                    });
+                }
+                
+            })
     })
 }
