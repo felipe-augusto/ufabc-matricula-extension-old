@@ -1,5 +1,11 @@
 'use strict';
 
+var test_url = 'matricula.html';
+var real_url = 'matricula.ufabc.edu.br/matricula';
+
+var endpoint = 'http://localhost:3000/';
+// 'https://desolate-lake-30493.herokuapp.com/'
+
 var cursos = [];
 var last_disciplina
 var user = ""
@@ -23,7 +29,7 @@ chrome.storage.local.get('ufabc-extension-last', function(items) {
 
 // guarda os professores num localstorage
 function getProfessores () {
-   $.get('https://desolate-lake-30493.herokuapp.com/disciplinas', function( data , textStatus, request) {
+   $.get(endpoint + 'disciplinas', function( data , textStatus, request) {
         chrome.storage.local.set({'ufabc-extension-last': request.getResponseHeader('Last-Modified')});
         chrome.storage.local.set({'ufabc-extension-disciplinas': data});
     }); 
@@ -98,18 +104,27 @@ window.addEventListener('load', function() {
     	});
     };
    // essa url mapeia a pagina principal da matricula (versao nova)
-   if(url.indexOf('matricula.ufabc.edu.br/matricula') != -1) {
+   if(url.indexOf(test_url) != -1) {
         // inject chart.js
         injectChart();
 
         //inject styles
         injectStyles();
 
+        // injeta modal
+        injectModal();
+
         // manda as informacoes para o servidor
         sendAlunoData();
 
         // append quantidade total de matriculas
         appendMatriculas();
+
+        // adiciona botao de cortes
+        adicionaCortes();
+
+        //handler de cortes
+        handlerCortes();
 
         toastr.info('Aplicando anabolizantes...');
         // cria elementos com filtros e da um append no documento
@@ -210,7 +225,7 @@ window.addEventListener('load', function() {
                         var turma = disciplina.substring(disciplina.lastIndexOf(" ")).replace(" ", "");
                         disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
                         var turno = el.text().split("(");
-                        var campus = turno[1].replace(")", "");
+                        var campus = turno[1].replace(")", "").split('|')[0].replace(/\s+$/, ''); 
                     } catch (err) {
                         return;
                     }
@@ -279,7 +294,7 @@ function criaHandlerSelecionadas() {
                     } else if (hash[disciplina_id]) {
                         var el = $(':nth-child(5)', this);
                         // achamos uma disciplina
-                        $.post( "https://desolate-lake-30493.herokuapp.com/simula", {disciplina_id: disciplina_id, aluno_id : aluno_id}, function( data ) {
+                        $.post(endpoint + 'simula', {disciplina_id: disciplina_id, aluno_id : aluno_id}, function( data ) {
                           var html = "(" + data.pos + "/" + data.total + ") ";
                           if (el.children('span').length) {
                             el.children('span').html(html);
@@ -310,6 +325,13 @@ function injectStyles () {
     s.type = "text/css";
     s.rel = "stylesheet";
     document.head.appendChild(s); 
+}
+
+// injeta estilos proprios
+function injectModal () {
+    var div = document.createElement('div');
+    div.innerHTML = modal_html;
+    document.body.appendChild(div); 
 }
 
 // cria o listener que escuta clickes para gerar pie charts
@@ -434,7 +456,7 @@ function sendAlunoData () {
                     for (var i = 0; i < item.length; i++) {
                         delete item[i].cursadas;
                     }
-                    $.post( "https://desolate-lake-30493.herokuapp.com/test", {data: item, aluno_id : aluno_id}, function( data ) {
+                    $.post( endpoint + 'test', {data: item, aluno_id : aluno_id}, function( data ) {
                       $( ".result" ).html( data );
                     });
                 }
@@ -442,3 +464,70 @@ function sendAlunoData () {
             })
     })
 }
+
+function adicionaCortes() {
+    $("#tabeladisciplinas tr td:nth-child(3)").each(function () {
+        var el = $(this);
+        el.append(' | <span href="#modalCortes" style="color: red; cursor: pointer;" id="openBtn" data-toggle="modal" class="corte" value="' + el.parent().attr('value') + '">Corte</span>');
+    });
+}
+
+function handlerCortes(){
+    $('.corte').click(function (e) {
+        var target = $(e.target);
+        var corte_id = target.attr('value');
+        var corpo = $('#tblGrid tbody');
+        var name = target.parent().parent().children()[2].innerText.split('|')[0];
+        $('.modal-title').text(name);
+        var vagas = parseInt(target.parent().parent().children()[3].innerText);
+        corpo.html('');
+        getAlunoId(function (aluno_id) {
+            $.post( endpoint + 'cortes', {disciplina_id: corte_id}, function( data ) {
+                    data.map(function (item, i) {
+                        // danger comes first
+                        var classe = (i + 1) > vagas ? 'danger' : '';
+                        classe = (item.id == aluno_id) ? ' warning' : classe; 
+                        var rank_h = '<td>' + (i + 1) + '</td>';
+                        var reserva_h = '<td>' + (item.reserva ? 'Sim' : 'Não') + '</td>';
+                        var turno_h = '<td>' + item.turno + '</td>';
+                        var ik_h = '<td>' + item.ik.toFixed(3) + '</td>';
+                        var cr_h = '<td>' + item.cr.toFixed(3) + '</td>';
+                        var cp_h = '<td>' + item.cp.toFixed(3) + '</td>';
+                        corpo.append('<tr class="' + classe + '">' + rank_h + reserva_h + turno_h + ik_h + cp_h + cr_h + '</tr>');
+                    })
+            });
+        })
+
+    })
+}
+
+var modal_html = '<div class="modal fade" id="modalCortes"> \
+<div class="modal-dialog"> \
+      <div class="modal-content"> \
+        <div class="modal-header"> \
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button> \
+          <h3 class="modal-title"></h3> \
+        </div> \
+        <div class="modal-body"> \
+          <table class="table table-striped" id="tblGrid"> \
+            <thead id="tblHead"> \
+              <tr> \
+                <th>Ranking</th> \
+                <th>Reserva de vaga</th> \
+                <th>Turno</th> \
+                <th>Ik</th> \
+                <th>CP</th> \
+                <th>CR</th> \
+              </tr> \
+            </thead> \
+            <tbody> \
+              <tr><td>Long Island, NY, USA</td> \
+                <td>3</td> \
+                <td class="text-right">45001</td> \
+              </tr> \
+            </tbody> \
+          </table> \
+        </div>   \
+      </div><!-- /.modal-content --> \
+    </div><!-- /.modal-dialog --> \
+  </div><!-- /.modal -->'
