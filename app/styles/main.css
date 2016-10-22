@@ -12,14 +12,12 @@
 
 .ufabc-well {
 	min-height: 20px;
-    padding: 8px;
-    margin-bottom: 5px;
     border: 1px solid;
     border-radius: 4px;
 }
 
 .ufabc-well a {
-	color: #e74c3c !important;
+	color: #F39C12 !important;
 }
 
 .ufabc-orange {

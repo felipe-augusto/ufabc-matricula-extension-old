@@ -126,7 +126,7 @@ window.addEventListener('load', function() {
         //handler de cortes
         handlerCortes();
 
-        toastr.info('Aplicando anabolizantes...');
+        toastr.info('Carregando extensao...');
         // cria elementos com filtros e da um append no documento
         var filters = "<div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><input type='checkbox' id='removeCursadas'> Remover disciplinas cursadas<br><input type='checkbox' id='loadHelp'> Carregar Professores<br><input type='checkbox' id='apenasMatriculadas'> Mostrar matérias selecionadas</div>";
 
@@ -206,7 +206,7 @@ window.addEventListener('load', function() {
                 $(".isHelp").css('display', '');
                 return;
             }
-            toastr.info('Preparando whey protein...');
+            toastr.info('Carregando professores...');
             // opcao de mostrar os professores
             chrome.storage.local.get('ufabc-extension-disciplinas', function (item) {
                 // implementar chart.js para ver o pie extraido do help
@@ -214,7 +214,7 @@ window.addEventListener('load', function() {
                 // cria uma hash
                 var hash_disciplinas = {}
                 for (var i = 0; i < disciplinas.length; i++) {
-                    hash_disciplinas[disciplinas[i].disciplina + "@" + disciplinas[i].turma + "@" + disciplinas[i].turno +"@" + disciplinas[i].campus.replace(' do Campo', '')] = disciplinas[i];
+                    hash_disciplinas[disciplinas[i].disciplina + "@" + disciplinas[i].turma + "@" + disciplinas[i].turno +"@" + disciplinas[i].campus.replace(' do Campo', '').trim()] = disciplinas[i];
                 };
                 // pega a table principal de disciplinas
                 $("table tr td:nth-child(3)").each(function () {
@@ -236,11 +236,23 @@ window.addEventListener('load', function() {
                         turno = "noturno";
                     }
 
-                    var search = disciplina + "@" + turma + "@" + turno + "@" + campus;
+                    var search = disciplina + "@" + turma + "@" + turno + "@" + campus;;
                     try {
-                        var item = hash_disciplinas[search].teoria_help;
-                        el.append('<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Professor: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>');
-                        el.append('<div class="col-md-12 isHelp ufabc-extension-font"><div class="col-md-6 ufabc-well ufabc-green"><strong>CR ALUNO: </strong><span>' + item.cr_aluno + '</span></div><div class="col-md-6 ufabc-well ufabc-orange">CR PROFESSOR: ' + item.cr_professor +'</div><div class="col-md-6 ufabc-well ufabc-red">REPROVAÇÕES: ' + item.reprovacoes + '</div><div style="cursor: pointer;" class="col-md-6 pie ufabc-well ufabc-blue" data=' + JSON.stringify(item.pie) + '>ESTATÍSTICAS</div></div>')
+                        //se tiver professor de teoria
+                        var html = '';
+                        var item = '';
+                        if (hash_disciplinas[search].teoria) {
+                            item = hash_disciplinas[search].teoria_help;
+                            html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent" style="margin-top: 6px;">Teoria: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
+                        } 
+                        if(hash_disciplinas[search].pratica) {
+                            item = hash_disciplinas[search].pratica_help;
+                            html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Prática: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
+                        }
+
+                        el.append(html);
+
+                        //el.append('<div class="col-md-12 isHelp ufabc-extension-font"><div class="col-md-6 ufabc-well ufabc-green"><strong>CR ALUNO: </strong><span>' + item.cr_aluno + '</span></div><div class="col-md-6 ufabc-well ufabc-orange">CR PROFESSOR: ' + item.cr_professor +'</div><div class="col-md-6 ufabc-well ufabc-red">REPROVAÇÕES: ' + item.reprovacoes + '</div><div style="cursor: pointer;" class="col-md-6 pie ufabc-well ufabc-blue" data=' + JSON.stringify(item.pie) + '>ESTATÍSTICAS</div></div>')
                     } catch (err) {
 
                     }
@@ -252,6 +264,8 @@ window.addEventListener('load', function() {
                 
             });
         });
+    // carrega professores automaticamente
+    $('#loadHelp').click();
    }
    
 
@@ -466,9 +480,9 @@ function sendAlunoData () {
 }
 
 function adicionaCortes() {
-    $("#tabeladisciplinas tr td:nth-child(3)").each(function () {
+    $("#tabeladisciplinas tr td:nth-child(4)").each(function () {
         var el = $(this);
-        el.append(' | <span href="#modalCortes" style="color: red; cursor: pointer;" id="openBtn" data-toggle="modal" class="corte" value="' + el.parent().attr('value') + '">Corte</span>');
+        el.append('<br><span href="#modalCortes" style="color: red; cursor: pointer;" id="openBtn" data-toggle="modal" class="corte ufabc-extension-prof" value="' + el.parent().attr('value') + '">Cortes</span>');
     });
 }
 
@@ -478,7 +492,7 @@ function handlerCortes(){
         var corte_id = target.attr('value');
         var corpo = $('#tblGrid tbody');
         var name = target.parent().parent().children()[2].innerText.split('|')[0];
-        $('.modal-title').text(name);
+        $('.modal-title').text(name.split(")")[0] + ")");
         var vagas = parseInt(target.parent().parent().children()[3].innerText);
         corpo.html('');
         getAlunoId(function (aluno_id) {
