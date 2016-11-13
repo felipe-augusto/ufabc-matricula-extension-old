@@ -5,7 +5,8 @@
   "dependencies": {
     "toastr": "^2.1.2",
     "jquery": "^3.0.0",
-    "Chart.js": "chartjs#^2.1.6"
+    "Chart.js": "chartjs#^2.1.6",
+    "webui-popover": "^2.1.15"
   },
   "devDependencies": {
     "chai": "^3.5.0",

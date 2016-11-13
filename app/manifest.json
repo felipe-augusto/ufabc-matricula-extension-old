@@ -30,11 +30,14 @@
         "bower_components/jquery/dist/jquery.min.js",
         "bower_components/Chart.js/dist/Chart.js",
         "bower_components/toastr/toastr.min.js",
+        "bower_components/webui-popover/dist/jquery.webui-popover.min.js",
 
         "scripts/contentscript.js"
       ],
       "css" : [
-        "bower_components/toastr/toastr.min.css"
+        "bower_components/toastr/toastr.min.css",
+        "bower_components/webui-popover/dist/jquery.webui-popover.min.css",
+        "styles/main.css"
       ],
       "run_at": "document_end",
       "all_frames": false

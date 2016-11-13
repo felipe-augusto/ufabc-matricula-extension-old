@@ -67,6 +67,8 @@ function getDisciplinas(url, i) {
     
 }
 
+var TIMER;
+
 // quando carrega qualquer pagina fazemos isto
 window.addEventListener('load', function() {
 	var url = document.location.href;
@@ -105,6 +107,8 @@ window.addEventListener('load', function() {
     };
    // essa url mapeia a pagina principal da matricula (versao nova)
    if(url.indexOf(test_url) != -1) {
+        getAllMatriculas();
+
         // inject chart.js
         injectChart();
 
@@ -128,11 +132,14 @@ window.addEventListener('load', function() {
 
         toastr.info('Carregando extensao...');
         // cria elementos com filtros e da um append no documento
-        var filters = "<div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><input type='checkbox' id='removeCursadas'> Remover disciplinas cursadas<br><input type='checkbox' id='loadHelp'> Carregar Professores<br><input type='checkbox' id='apenasMatriculadas'> Mostrar matérias selecionadas</div>";
-
+        var filters = "<div class='col-md-12 extension'><div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><input type='checkbox' id='removeCursadas'> Remover disciplinas cursadas<br><input type='checkbox' id='loadHelp'> Carregar Professores<br><input type='checkbox' id='apenasMatriculadas'> Mostrar matérias selecionadas</div><div class='col-md-6'><input type='text' class='form-control' id='search'>Bootstrap Switch Default<div class='material-switch pull-right'><input id='someSwitchOptionDefault' name='someSwitchOption001' type='checkbox'/><label for='someSwitchOptionDefault' class='label-default'></label></div></div></div>";
+        var filters = "<div class='col-md-12 extension'><div class='col-md-12'><h2>ufabc matricula</h2></div><div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><ul class='list-group'><li class='list-group-item'>Remover disciplinas cursadas<div class='material-switch pull-right'><input type='checkbox' id='removeCursadas'><label for='removeCursadas' class='label-success'></label></div></li><li class='list-group-item'>Carregar Professores<div class='material-switch pull-right'><input type='checkbox' id='loadHelp'><label for='loadHelp' class='label-success'></div><li class='list-group-item'>Mostrar matérias selecionadas<div class='material-switch pull-right'><input type='checkbox' id='apenasMatriculadas'><label for='apenasMatriculadas' class='label-success'></label></div></li></ul></div><div class='col-md-3'><label for='ufabc-extension'>Filtros por câmpus</label><br><ul class='list-group'><li class='list-group-item'>Santo André<div class='material-switch pull-right'><input type='checkbox' id='andre'><label for='andre' class='label-success'></label></div></li><li class='list-group-item'>São Bernardo do Campo<div class='material-switch pull-right'><input type='checkbox' id='bernardo'><label for='bernardo' class='label-success'></label></div></li></div><div class='col-md-3'><label for='ufabc-extension'>Filtros por turno</label><br><ul class='list-group'><li class='list-group-item'>Matutino<div class='material-switch pull-right'><input type='checkbox' id='fmatutino'><label for='fmatutino' class='label-success'></label></div></li><li class='list-group-item'>Noturno<div class='material-switch pull-right'><input type='checkbox' id='fnoturno'><label for='fnoturno' class='label-success'></label></div></li></ul></div><div class='col-md-3'><a class='btn btn-primary btn-outline'>Compartilhe</a></div><div class='col-md-12'><span class='pull-right'>Made with love</span></div></div>"
         // poe filtros monstros e arruma para aparecer correto na tela
         $(".busca").parent().append(filters);
         $(".busca").parent().children(".col-md-6").removeClass("col-md-6").addClass("col-md-3");
+
+        // handlers filtros iguais ufabc
+        sameHandlers();
 
         // cria handler para matriculas selecionadas
         criaHandlerSelecionadas();
@@ -240,6 +247,9 @@ window.addEventListener('load', function() {
                     try {
                         //se tiver professor de teoria
                         var html = '';
+                        if(hash_disciplinas[search]) {
+                            html += "<div data='" + JSON.stringify(hash_disciplinas[search]) +  "'>";
+                        }
                         var item = '';
                         if (hash_disciplinas[search].teoria) {
                             item = hash_disciplinas[search].teoria_help;
@@ -249,7 +259,7 @@ window.addEventListener('load', function() {
                             item = hash_disciplinas[search].pratica_help;
                             html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Prática: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
                         }
-
+                        html += "</div>";
                         el.append(html);
 
                         //el.append('<div class="col-md-12 isHelp ufabc-extension-font"><div class="col-md-6 ufabc-well ufabc-green"><strong>CR ALUNO: </strong><span>' + item.cr_aluno + '</span></div><div class="col-md-6 ufabc-well ufabc-orange">CR PROFESSOR: ' + item.cr_professor +'</div><div class="col-md-6 ufabc-well ufabc-red">REPROVAÇÕES: ' + item.reprovacoes + '</div><div style="cursor: pointer;" class="col-md-6 pie ufabc-well ufabc-blue" data=' + JSON.stringify(item.pie) + '>ESTATÍSTICAS</div></div>')
@@ -350,30 +360,42 @@ function injectModal () {
 
 // cria o listener que escuta clickes para gerar pie charts
 function createPieListener () {
-    $( ".pie" ).click(function(e) {
+    $( ".pie" ).on("mouseover", function(e) {
+        var tipo = $(e.target).text().toLowerCase().indexOf("teoria");
         // checa para ver se ja nao exista um canvas
         // se existir toogle it
         if ($(e.target).parent().children('canvas').length > 0) {
-            $(e.target).parent().children('canvas').remove();
+            // $(e.target).parent().children('canvas').remove();
         } else {
-
             try {
-                var data = JSON.parse($(e.target).attr('data'));
-                createCanvas($(e.target), data);
+                var data = JSON.parse($(e.target).parent().attr('data'));
+                if(tipo != -1) {
+                    createCanvas($(e.target), data.teoria_help.pie, data.teoria_help);
+                } else {
+                     createCanvas($(e.target), data.pratica_help.pie, data.pratica_help);
+                }
+                
             } catch (err) {
 
             }
         }
-        
-    })
+    });
 }
 
 // cria canvas e em seguida o respectivo pie do elemento
-function createCanvas(el, item) {
+function createCanvas(el, item, prof) {
+    console.log(prof);
     var node = document.createElement("canvas");
     var id  = new Date().getTime();
     node.id = id;
+    // append apenas se nao existir
+    el.parent().append("<div class='pull-right closePie'>x  </div>");
     el.parent().append(node);
+
+    $(".closePie").on("click", function(e) {
+        $(e.target).parent().children('canvas').remove();
+        $(e.target).remove();
+    })
 
     var ctx = $("#" + id.toString());
 
@@ -439,6 +461,20 @@ function getMatriculas(aluno_id, cb) {
             cb(data[aluno_id]);
         } catch (err) {
             // teria que tentar novamente
+        }
+        
+    });
+}
+
+// pega as matriculas de um determinado aluno
+function getAllMatriculas() {
+    $.get('https://matricula.ufabc.edu.br/cache/matriculas.js', function (data) {
+        try {
+            data = JSON.parse(data.replace('matriculas=', '').replace(';', ''));
+            // send this to the server
+            console.log(data);
+        } catch (err) {
+            getAllMatriculas();
         }
         
     });
@@ -545,3 +581,73 @@ var modal_html = '<div class="modal fade" id="modalCortes"> \
       </div><!-- /.modal-content --> \
     </div><!-- /.modal-dialog --> \
   </div><!-- /.modal -->'
+
+function sameHandlers() {
+    $('#andre').click(function (e) {
+        if (!$('#andre').is(':checked')) {
+            $("#tabeladisciplinas tr").each(function(){
+                $(this).removeClass("notAndre");
+            })
+            return;
+        } else {
+            $("#tabeladisciplinas tr td:nth-child(3)").each(function(){
+                var campus = $(this).text().split("(")[1].split(")")[0].toLowerCase();
+                if(campus.indexOf('bernardo') != -1) {
+                    // tem que sumir
+                    $(this).parent().addClass("notAndre");
+                }
+            });
+        }
+    });
+
+    $('#bernardo').click(function (e) {
+        if (!$('#bernardo').is(':checked')) {
+            $("#tabeladisciplinas tr").each(function(){
+                $(this).removeClass("notBernardo");
+            })
+            return;
+        } else {
+            $("#tabeladisciplinas tr td:nth-child(3)").each(function(){
+                var campus = $(this).text().split("(")[1].split(")")[0].toLowerCase();
+                if(campus.indexOf('andr') != -1) {
+                    // tem que sumir
+                    $(this).parent().addClass("notBernardo");
+                }
+            });
+        }
+    });
+
+    $('#fmatutino').click(function (e) {
+        if (!$('#fmatutino').is(':checked')) {
+            $("#tabeladisciplinas tr").each(function(){
+                $(this).removeClass("notMatutino");
+            })
+            return;
+        } else {
+            $("#tabeladisciplinas tr td:nth-child(3)").each(function(){
+                var campus = $(this).text().toLowerCase();
+                if(campus.indexOf('noturno') != -1) {
+                    // tem que sumir
+                    $(this).parent().addClass("notMatutino");
+                }
+            });
+        }
+    });
+
+    $('#fnoturno').click(function (e) {
+        if (!$('#fnoturno').is(':checked')) {
+            $("#tabeladisciplinas tr").each(function(){
+                $(this).removeClass("notNoturno");
+            })
+            return;
+        } else {
+            $("#tabeladisciplinas tr td:nth-child(3)").each(function(){
+                var campus = $(this).text().toLowerCase();
+                if(campus.indexOf('matutino') != -1) {
+                    // tem que sumir
+                    $(this).parent().addClass("notNoturno");
+                }
+            });
+        }
+    });
+}
