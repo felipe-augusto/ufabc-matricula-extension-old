@@ -1,9 +1,9 @@
 'use strict';
 
-var test_url = 'matricula.html';
-var real_url = 'matricula.ufabc.edu.br/matricula';
+var real_url = 'matricula.html';
+var test_url = 'matricula.ufabc.edu.br/matricula';
 
-var endpoint = 'http://localhost:3000/';
+var endpoint = 'https://desolate-lake-30493.herokuapp.com/';
 // 'https://desolate-lake-30493.herokuapp.com/'
 
 var cursos = [];
@@ -107,13 +107,14 @@ window.addEventListener('load', function() {
     };
    // essa url mapeia a pagina principal da matricula (versao nova)
    if(url.indexOf(test_url) != -1) {
+        //inject styles
+        injectStyles();
+
+        // send all matriculas to server
         getAllMatriculas();
 
         // inject chart.js
         injectChart();
-
-        //inject styles
-        injectStyles();
 
         // injeta modal
         injectModal();
@@ -133,7 +134,7 @@ window.addEventListener('load', function() {
         toastr.info('Carregando extensao...');
         // cria elementos com filtros e da um append no documento
         var filters = "<div class='col-md-12 extension'><div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><input type='checkbox' id='removeCursadas'> Remover disciplinas cursadas<br><input type='checkbox' id='loadHelp'> Carregar Professores<br><input type='checkbox' id='apenasMatriculadas'> Mostrar matérias selecionadas</div><div class='col-md-6'><input type='text' class='form-control' id='search'>Bootstrap Switch Default<div class='material-switch pull-right'><input id='someSwitchOptionDefault' name='someSwitchOption001' type='checkbox'/><label for='someSwitchOptionDefault' class='label-default'></label></div></div></div>";
-        var filters = "<div class='col-md-12 extension'><div class='col-md-12'><h2>ufabc matricula</h2></div><div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><ul class='list-group'><li class='list-group-item'>Remover disciplinas cursadas<div class='material-switch pull-right'><input type='checkbox' id='removeCursadas'><label for='removeCursadas' class='label-success'></label></div></li><li class='list-group-item'>Carregar Professores<div class='material-switch pull-right'><input type='checkbox' id='loadHelp'><label for='loadHelp' class='label-success'></div><li class='list-group-item'>Mostrar matérias selecionadas<div class='material-switch pull-right'><input type='checkbox' id='apenasMatriculadas'><label for='apenasMatriculadas' class='label-success'></label></div></li></ul></div><div class='col-md-3'><label for='ufabc-extension'>Filtros por câmpus</label><br><ul class='list-group'><li class='list-group-item'>Santo André<div class='material-switch pull-right'><input type='checkbox' id='andre'><label for='andre' class='label-success'></label></div></li><li class='list-group-item'>São Bernardo do Campo<div class='material-switch pull-right'><input type='checkbox' id='bernardo'><label for='bernardo' class='label-success'></label></div></li></div><div class='col-md-3'><label for='ufabc-extension'>Filtros por turno</label><br><ul class='list-group'><li class='list-group-item'>Matutino<div class='material-switch pull-right'><input type='checkbox' id='fmatutino'><label for='fmatutino' class='label-success'></label></div></li><li class='list-group-item'>Noturno<div class='material-switch pull-right'><input type='checkbox' id='fnoturno'><label for='fnoturno' class='label-success'></label></div></li></ul></div><div class='col-md-3'><a class='btn btn-primary btn-outline'>Compartilhe</a></div><div class='col-md-12'><span class='pull-right'>Made with love</span></div></div>"
+        var filters = "<div class='col-md-12 extension'><div class='col-md-12'><h2>ufabc matricula</h2></div><div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><ul class='list-group'><li class='list-group-item'>Remover disciplinas cursadas<div class='material-switch pull-right'><input type='checkbox' id='removeCursadas'><label for='removeCursadas' class='label-success'></label></div></li><li class='list-group-item'>Carregar Professores<div class='material-switch pull-right'><input type='checkbox' id='loadHelp'><label for='loadHelp' class='label-success'></div><li class='list-group-item'>Mostrar matérias selecionadas<div class='material-switch pull-right'><input type='checkbox' id='apenasMatriculadas'><label for='apenasMatriculadas' class='label-success'></label></div></li><li class='list-group-item'>Professor com CR maior que: <input style='width: 51px;' value=0 type='number' id='cutHigh' min='0' max='4' step='0.25'></li></ul></div><div class='col-md-3'><label for='ufabc-extension'>Filtros por câmpus</label><br><ul class='list-group'><li class='list-group-item'>Santo André<div class='material-switch pull-right'><input type='checkbox' id='andre'><label for='andre' class='label-success'></label></div></li><li class='list-group-item'>São Bernardo do Campo<div class='material-switch pull-right'><input type='checkbox' id='bernardo'><label for='bernardo' class='label-success'></label></div></li></div><div class='col-md-3'><label for='ufabc-extension'>Filtros por turno</label><br><ul class='list-group'><li class='list-group-item'>Matutino<div class='material-switch pull-right'><input type='checkbox' id='fmatutino'><label for='fmatutino' class='label-success'></label></div></li><li class='list-group-item'>Noturno<div class='material-switch pull-right'><input type='checkbox' id='fnoturno'><label for='fnoturno' class='label-success'></label></div></li></ul></div><div class='col-md-3'></div><div class='col-md-12'><span class='pull-right'>Made with ☕</span></div></div>"
         // poe filtros monstros e arruma para aparecer correto na tela
         $(".busca").parent().append(filters);
         $(".busca").parent().children(".col-md-6").removeClass("col-md-6").addClass("col-md-3");
@@ -163,7 +164,7 @@ window.addEventListener('load', function() {
             chrome.storage.local.get(current_user, function (item) {
                 
                 if (item[current_user] == null) {
-                    toastr.info('Nao temos as disciplinas que voce cursou! <a href="https://aluno.ufabc.edu.br/" target="_blank"> Clique aqui</a> para carrega-las.' );
+                    toastr.info('Nao temos as disciplinas que voce cursou! <a href="https://aluno.ufabc.edu.br/" target="_blank" style="color: #FFF;"> Clique aqui</a> para carrega-las.' );
                     return;
                 }
                 item = item[current_user]; 
@@ -252,13 +253,23 @@ window.addEventListener('load', function() {
                         }
                         var item = '';
                         if (hash_disciplinas[search].teoria) {
-                            item = hash_disciplinas[search].teoria_help;
-                            html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent" style="margin-top: 6px;">Teoria: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
+                            try {
+                                item = hash_disciplinas[search].teoria_help;
+                                html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent" style="margin-top: 6px;">Teoria: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
+                            } catch (err) {
+                                item = hash_disciplinas[search];
+                                html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Teoria: <a href="' + '#' +'" target="_blank">' + item.teoria + '</a></div>';
+                            }
                         } 
                         if(hash_disciplinas[search].pratica) {
-                            item = hash_disciplinas[search].pratica_help;
-                            html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Prática: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
-                        }
+                            try {
+                                item = hash_disciplinas[search].pratica_help;
+                                html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Prática: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
+                            } catch (err) {
+                                item = hash_disciplinas[search];
+                                html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Teoria: <a href="' + '#' +'" target="_blank">' + item.pratica + '</a></div>';
+                            }
+                          }
                         html += "</div>";
                         el.append(html);
 
@@ -269,8 +280,44 @@ window.addEventListener('load', function() {
 
                 });
 
-                createPieListener();
+                // tenta criar todos os hover
+                $('.isHelp').children('a').each(function() {
+                    try {
+                        var el = $(this);
+                        var help_data = JSON.parse(el.parent().parent().attr('data'));
+                        var type = el.parent().text().toLowerCase().indexOf('teoria');
+                        var id = new Date().getTime() + parseInt(Math.random() * 8999 + 1000);;
+                        var html, title;
+                        if(type === -1) {
+                            title = "PRÁTICA: " + el.text().toUpperCase();
+                            html = generateHTMLPie(help_data.pratica_help, id);
+                        } else {
+                            title = "TEORIA: " + el.text().toUpperCase();
+                            html = generateHTMLPie(help_data.teoria_help, id);
+                        }
 
+                        el.webuiPopover({
+                            title: title,
+                            content: html,
+                            closeable:true,
+                            trigger: 'hover',
+                            placement: 'horizontal',
+                            onShow: function($element) {
+                                if(type === -1) {
+                                    generatePie(help_data.pratica_help.pie, id);
+                                } else {
+                                    generatePie(help_data.teoria_help.pie, id);
+                                }
+                                
+                            }
+                        });
+
+                        //generatePie(help_data.teoria_help, id);
+                    } catch (err) {
+                        //console.log('err');
+                    }
+                    
+                });
                 
             });
         });
@@ -318,15 +365,16 @@ function criaHandlerSelecionadas() {
                     } else if (hash[disciplina_id]) {
                         var el = $(':nth-child(5)', this);
                         // achamos uma disciplina
-                        $.post(endpoint + 'simula', {disciplina_id: disciplina_id, aluno_id : aluno_id}, function( data ) {
-                          var html = "(" + data.pos + "/" + data.total + ") ";
-                          if (el.children('span').length) {
-                            el.children('span').html(html);
-                          } else {
-                            el.html('<span style="color: red;">' + html + '</span> ' + el.text());
-                          }
+                        // deprecated
+                        // $.post(endpoint + 'simula', {disciplina_id: disciplina_id, aluno_id : aluno_id}, function( data ) {
+                        //   var html = "(" + data.pos + "/" + data.total + ") ";
+                        //   if (el.children('span').length) {
+                        //     el.children('span').html(html);
+                        //   } else {
+                        //     el.html('<span style="color: red;">' + html + '</span> ' + el.text());
+                        //   }
                           
-                        }); 
+                        // }); 
                     }
                 });
             })
@@ -358,46 +406,16 @@ function injectModal () {
     document.body.appendChild(div); 
 }
 
-// cria o listener que escuta clickes para gerar pie charts
-function createPieListener () {
-    $( ".pie" ).on("mouseover", function(e) {
-        var tipo = $(e.target).text().toLowerCase().indexOf("teoria");
-        // checa para ver se ja nao exista um canvas
-        // se existir toogle it
-        if ($(e.target).parent().children('canvas').length > 0) {
-            // $(e.target).parent().children('canvas').remove();
-        } else {
-            try {
-                var data = JSON.parse($(e.target).parent().attr('data'));
-                if(tipo != -1) {
-                    createCanvas($(e.target), data.teoria_help.pie, data.teoria_help);
-                } else {
-                     createCanvas($(e.target), data.pratica_help.pie, data.pratica_help);
-                }
-                
-            } catch (err) {
-
-            }
-        }
-    });
+function generateHTMLPie (info, id) {
+    var html = "<canvas id='pie" + id + "'></canvas><br>";
+    html += "<table class='table'><tbody><tr><td>CR Aluno</td><td><b>" + info.cr_aluno + "</b></td></tr><tr><td>CR Professor</td><td><b>" + info.cr_professor + "</b></td></tr><tr><td>Reprovacoes</td><td><b>" + info.reprovacoes + "</b></td></tr><tr><td>Trancamentos</td><td><b>" + info.trancamentos +"</b></td></tr></tbody></table>";
+    return html;
 }
 
-// cria canvas e em seguida o respectivo pie do elemento
-function createCanvas(el, item, prof) {
-    console.log(prof);
-    var node = document.createElement("canvas");
-    var id  = new Date().getTime();
-    node.id = id;
-    // append apenas se nao existir
-    el.parent().append("<div class='pull-right closePie'>x  </div>");
-    el.parent().append(node);
+function generatePie(item, id){
+    var ctx = $("#pie" + id);
 
-    $(".closePie").on("click", function(e) {
-        $(e.target).parent().children('canvas').remove();
-        $(e.target).remove();
-    })
-
-    var ctx = $("#" + id.toString());
+    console.log(ctx);
 
     var possible_colors = {"A" : "rgb(124, 181, 236)", "B" : "rgb(67, 67, 72)", "C": "rgb(144, 237, 125)", "D" : "rgb(247, 163, 92)"};
     var possible_hover = {"A" : "rgb(149, 206, 255)", "B" : "rgb(92, 92, 97)", "C": "rgb(168, 255, 150)", "D" : "rgb(255, 188, 117)"};
@@ -466,13 +484,18 @@ function getMatriculas(aluno_id, cb) {
     });
 }
 
-// pega as matriculas de um determinado aluno
+// pega todas as matriculas e manda para o servidor
 function getAllMatriculas() {
     $.get('https://matricula.ufabc.edu.br/cache/matriculas.js', function (data) {
         try {
             data = JSON.parse(data.replace('matriculas=', '').replace(';', ''));
             // send this to the server
-            console.log(data);
+            if(Object.keys(data).length > 0) {
+                $.post( endpoint + 'update_matriculas', {data: data}, function( data ) {
+                    console.log(data);
+                });
+            }
+
         } catch (err) {
             getAllMatriculas();
         }
@@ -523,28 +546,41 @@ function adicionaCortes() {
 }
 
 function handlerCortes(){
-    $('.corte').click(function (e) {
-        var target = $(e.target);
-        var corte_id = target.attr('value');
-        var corpo = $('#tblGrid tbody');
-        var name = target.parent().parent().children()[2].innerText.split('|')[0];
-        $('.modal-title').text(name.split(")")[0] + ")");
-        var vagas = parseInt(target.parent().parent().children()[3].innerText);
-        corpo.html('');
+    $('.corte').on('click', function (e) {
+        
         getAlunoId(function (aluno_id) {
-            $.post( endpoint + 'cortes', {disciplina_id: corte_id}, function( data ) {
-                    data.map(function (item, i) {
-                        // danger comes first
-                        var classe = (i + 1) > vagas ? 'danger' : '';
-                        classe = (item.id == aluno_id) ? ' warning' : classe; 
-                        var rank_h = '<td>' + (i + 1) + '</td>';
-                        var reserva_h = '<td>' + (item.reserva ? 'Sim' : 'Não') + '</td>';
-                        var turno_h = '<td>' + item.turno + '</td>';
-                        var ik_h = '<td>' + item.ik.toFixed(3) + '</td>';
-                        var cr_h = '<td>' + item.cr.toFixed(3) + '</td>';
-                        var cp_h = '<td>' + item.cp.toFixed(3) + '</td>';
-                        corpo.append('<tr class="' + classe + '">' + rank_h + reserva_h + turno_h + ik_h + cp_h + cr_h + '</tr>');
-                    })
+            $.post(endpoint + 'is_allowed', {aluno_id: aluno_id}, function( data ) {
+                if(data == 'OK') {
+                    var target = $(e.target);
+                    var corte_id = target.attr('value');
+                    var corpo = $('#tblGrid tbody');
+                    corpo.parent().show();
+                    var name = target.parent().parent().children()[2].innerText.split('|')[0];
+                    $('.modal-title').text(name.split(")")[0] + ")");
+                    var vagas = parseInt(target.parent().parent().children()[3].innerText);
+                    corpo.html('');
+                    $.post( endpoint + 'cortes', {disciplina_id: corte_id}, function( data ) {
+                            data.map(function (item, i) {
+                                // danger comes first
+                                var classe = (i + 1) > vagas ? 'danger' : '';
+                                classe = (item.id == aluno_id) ? ' warning' : classe; 
+                                var rank_h = '<td>' + (i + 1) + '</td>';
+                                var reserva_h = '<td>' + (item.reserva ? 'Sim' : 'Não') + '</td>';
+                                var turno_h = '<td>' + item.turno + '</td>';
+                                var ik_h = '<td>' + item.ik.toFixed(3) + '</td>';
+                                var cr_h = '<td>' + item.cr.toFixed(3) + '</td>';
+                                var cp_h = '<td>' + item.cp.toFixed(3) + '</td>';
+                                corpo.append('<tr class="' + classe + '">' + rank_h + reserva_h + turno_h + ik_h + cp_h + cr_h + '</tr>');
+                            })
+                    });
+                } else {
+                    var target = $(e.target);
+                    var corte_id = target.attr('value');
+                    var corpo = $('#tblGrid tbody');
+                    corpo.parent().hide();
+                    $('.modal-title').html('Nao temos as disciplinas que voce cursou! <a href="https://aluno.ufabc.edu.br/" target="_blank"> Clique aqui</a> para carrega-las.' );
+                    return;
+                }
             });
         })
 
@@ -571,9 +607,9 @@ var modal_html = '<div class="modal fade" id="modalCortes"> \
               </tr> \
             </thead> \
             <tbody> \
-              <tr><td>Long Island, NY, USA</td> \
-                <td>3</td> \
-                <td class="text-right">45001</td> \
+              <tr><td></td> \
+                <td></td> \
+                <td class="text-right"></td> \
               </tr> \
             </tbody> \
           </table> \
@@ -650,4 +686,36 @@ function sameHandlers() {
             });
         }
     });
+
+    $("#cutHigh").bind('keyup mouseup', function () {
+        var limit = parseFloat($("#cutHigh").val());
+        $('.isHelp').parent().each(function(){
+            try {
+                var prof = JSON.parse($(this).attr('data'));
+                if (prof.teoria && !prof.pratica) {
+                    if (parseFloat(prof.teoria_help.cr_aluno) < limit) {
+                        $(this).parent().parent().addClass('notHigh');
+                    } else {
+                        $(this).parent().parent().removeClass('notHigh');
+                    };
+                } else if (prof.pratica && !prof.teoria) {
+                    if (parseFloat(prof.pratica_help.cr_aluno) < limit) {
+                        $(this).parent().parent().addClass('notHigh');
+                    } else {
+                        $(this).parent().parent().removeClass('notHigh');
+                    };
+                } else {
+                    if (parseFloat(prof.teoria_help.cr_aluno) < limit && parseFloat(prof.pratica_help.cr_aluno) < limit) {
+                        $(this).parent().parent().addClass('notHigh');
+                    } else {
+                        $(this).parent().parent().removeClass('notHigh');
+                    };
+                }
+            } catch (err) {
+
+            }
+        })
+    });
+
+    
 }
