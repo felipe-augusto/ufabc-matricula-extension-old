@@ -1,7 +1,7 @@
 'use strict';
 
-var real_url = 'matricula.html';
-var test_url = 'matricula.ufabc.edu.br/matricula';
+var test_url = 'matricula.html';
+var real_url = 'matricula.ufabc.edu.br/matricula';
 
 var endpoint = 'https://desolate-lake-30493.herokuapp.com/';
 // 'https://desolate-lake-30493.herokuapp.com/'
@@ -52,6 +52,7 @@ function getDisciplinas(url, i) {
         cursos[i - 1].cp = parseFloat(info[0].innerText.replace(',', '.'));
         cursos[i - 1].cr = parseFloat(info[1].innerText.replace(',', '.'));
         cursos[i - 1].ca = parseFloat(info[2].innerText.replace(',', '.'));
+        cursos[i - 1].quads = ficha_obj.find(".ano_periodo").length;
         console.log(cursos[i - 1]);
         // para ter certeza que as info de CR ja foram colocadas
         $.get( 'https://aluno.ufabc.edu.br' + url, function( data ) {
@@ -73,6 +74,10 @@ var TIMER;
 window.addEventListener('load', function() {
 	var url = document.location.href;
 	// essa url mapeia a pagina principal da ficha individual
+    // dados_pessoais
+    if(url.indexOf('aluno.ufabc.edu.br/dados_pessoais') != -1) {
+        toastr.info("Clique em <a href='https://aluno.ufabc.edu.br/fichas_individuais' style='color: #FFF !important;'>Ficha Individual</a> para atualizar suas informações!");
+    }
     if(url.indexOf('aluno.ufabc.edu.br/fichas_individuais') != -1) {
         toastr.info('A mágica começa agora...');
         // pega o email da ufabc
@@ -106,7 +111,7 @@ window.addEventListener('load', function() {
     	});
     };
    // essa url mapeia a pagina principal da matricula (versao nova)
-   if(url.indexOf(test_url) != -1) {
+   if(url.indexOf(real_url) != -1) {
         //inject styles
         injectStyles();
 
