@@ -181,7 +181,7 @@ window.addEventListener('load', function() {
                     var codigo = todas_cursadas[i].codigo; // codigos mudam com o passar do tempo, nao rola
                     var conceito = todas_cursadas[i].conceito;
                     var disciplina = todas_cursadas[i].disciplina;
-                    if (conceito === 'A' || conceito === 'B' || conceito === 'C' || conceito === 'D') {
+                    if (conceito === 'A' || conceito === 'B' || conceito === 'C' || conceito === 'D' || conceito === 'E') {
                         ja_cursadas[disciplina] = true;
                         for (var key in disciplinas_mudadas) {
                             if (key === disciplina) {
@@ -496,9 +496,10 @@ function getAllMatriculas() {
             data = JSON.parse(data.replace('matriculas=', '').replace(';', ''));
             // send this to the server
             if(Object.keys(data).length > 0) {
-                $.post( endpoint + 'update_matriculas', {data: data}, function( data ) {
-                    console.log(data);
-                });
+                // data = JSON.stringify(data);
+                // $.post( endpoint + 'update_matriculas', {data: data}, function( data ) {
+                //     console.log(data);
+                // });
             }
 
         } catch (err) {
@@ -552,7 +553,6 @@ function adicionaCortes() {
 
 function handlerCortes(){
     $('.corte').on('click', function (e) {
-        
         getAlunoId(function (aluno_id) {
             $.post(endpoint + 'is_allowed', {aluno_id: aluno_id}, function( data ) {
                 if(data == 'OK') {
@@ -563,11 +563,25 @@ function handlerCortes(){
                     var name = target.parent().parent().children()[2].innerText.split('|')[0];
                     $('.modal-title').text(name.split(")")[0] + ")");
                     var vagas = parseInt(target.parent().parent().children()[3].innerText);
+                    var requisicoes = parseInt(target.parent().parent().children()[4].innerText);
                     corpo.html('');
                     $.post( endpoint + 'cortes', {disciplina_id: corte_id}, function( data ) {
+                            var disc = $( "td[value='" + corte_id +"']" );
+                            var classe;
+                            if(requisicoes > vagas) { 
+                                var previsao = Math.floor(data.length * vagas / requisicoes);
+                                classe = (i + 1) > previsao ? 'info' : '';
+                            }
                             data.map(function (item, i) {
-                                // danger comes first
-                                var classe = (i + 1) > vagas ? 'danger' : '';
+                                // implementacao da previsao
+                                // if(i + 1 == previsao) {
+                                //     $('#previsao').html('');
+                                //     var previsaoStr = "<h4>Previsao de Corte:"
+                                //     previsaoStr += name.split('-')[1].split('(')[0].replace(" ", "") == item.turno ? "Turno " + item.turno : "";
+                                //     previsaoStr += "</h4>"
+                                //     $('#previsao').append(previsaoStr);
+                                // }
+                                classe = (i + 1) > vagas ? 'danger' : '';
                                 classe = (item.id == aluno_id) ? ' warning' : classe; 
                                 var rank_h = '<td>' + (i + 1) + '</td>';
                                 var reserva_h = '<td>' + (item.reserva ? 'Sim' : 'Não') + '</td>';
@@ -598,6 +612,10 @@ var modal_html = '<div class="modal fade" id="modalCortes"> \
         <div class="modal-header"> \
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button> \
           <h3 class="modal-title"></h3> \
+          <div class="row"> \
+            <div class="col-md-12 text-center" id="previsao"> \
+            </div> \
+            </div> \
         </div> \
         <div class="modal-body"> \
           <table class="table table-striped" id="tblGrid"> \
