@@ -567,12 +567,8 @@ function handlerCortes(){
                     corpo.html('');
                     $.post( endpoint + 'cortes', {disciplina_id: corte_id}, function( data ) {
                             var disc = $( "td[value='" + corte_id +"']" );
-                            var classe;
-                            if(requisicoes > vagas) { 
-                                var previsao = Math.floor(data.length * vagas / requisicoes);
-                                classe = (i + 1) > previsao ? 'info' : '';
-                            }
                             data.map(function (item, i) {
+                                var classe = '';
                                 // implementacao da previsao
                                 // if(i + 1 == previsao) {
                                 //     $('#previsao').html('');
@@ -581,7 +577,11 @@ function handlerCortes(){
                                 //     previsaoStr += "</h4>"
                                 //     $('#previsao').append(previsaoStr);
                                 // }
-                                classe = (i + 1) > vagas ? 'danger' : '';
+                                if(requisicoes > vagas) { 
+                                    var previsao = Math.floor(data.length * vagas / requisicoes);
+                                    classe = (i + 1) > previsao ? 'info' : '';
+                                }
+                                classe = (i + 1) > vagas ? 'danger' : classe;
                                 classe = (item.id == aluno_id) ? ' warning' : classe; 
                                 var rank_h = '<td>' + (i + 1) + '</td>';
                                 var reserva_h = '<td>' + (item.reserva ? 'Sim' : 'Não') + '</td>';
@@ -614,6 +614,10 @@ var modal_html = '<div class="modal fade" id="modalCortes"> \
           <h3 class="modal-title"></h3> \
           <div class="row"> \
             <div class="col-md-12 text-center" id="previsao"> \
+               <button class="btn">Legenda de cores: </button> \
+               <button class="btn btn-info">Previsão de corte</button> \
+               <button class="btn btn-danger">Corte real</button> \
+               <button class="btn btn-warning">Sua posição</button> \
             </div> \
             </div> \
         </div> \
