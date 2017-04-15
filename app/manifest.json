@@ -17,14 +17,14 @@
   "permissions": [
     "tabs",
     "storage",
-    "http://*/*",
-    "https://*/*"
+    "http://*.ufabc.edu.br/*",
+    "https://*.ufabc.edu.br/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "http://*.ufabc.edu.br/*",
+        "https://*.ufabc.edu.br/*"
       ],
       "js": [
         "bower_components/jquery/dist/jquery.min.js",
