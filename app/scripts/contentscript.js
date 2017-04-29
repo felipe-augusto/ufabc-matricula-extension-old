@@ -1,12 +1,17 @@
 'use strict';
 
-var test_url = 'matricula.html';
-var real_url = 'matricula.ufabc.edu.br/matricula';
+var testing = true;
+var matricula_url;
+var endpoint;
 
-var endpoint = 'https://desolate-lake-30493.herokuapp.com/';
-// 'https://desolate-lake-30493.herokuapp.com/'
+if (testing) {
+    matricula_url = 'matricula.html';
+    endpoint = 'https://desolate-lake-30493.herokuapp.com/';
+} else {
+    matricula_url = 'matricula.ufabc.edu.br/matricula';
+    endpoint = 'https://desolate-lake-30493.herokuapp.com/';
+}
 
-var cursos = [];
 var last_disciplina
 var user = ""
 // pega as disciplinas com os professores
@@ -21,7 +26,6 @@ chrome.storage.local.get('ufabc-extension-last', function(items) {
         var minutes = Math.floor(timeDiff / 1000 / 60);
         // se passou mais que 30 minutos refaz a requisicao
         if (minutes >= 30) {
-            console.log('Atualizei os professores');
             getProfessores();
         }
     };
@@ -36,93 +40,26 @@ function getProfessores () {
 }
 
 // disciplinas que mudaram de nome (HARDCODED)
-var disciplinas_mudadas = {"Energia: Origens, Conversão e Uso" : "Bases Conceituais da Energia",
-                            "Transformações nos Seres Vivos e Ambiente" : "Biodiversidade: Interações entre organismos e ambiente",
-                            "Transformações Bioquímicas" : "Bioquímica: estrutura, propriedade e funções de Biomoléculas",
-                            "Origem da Vida e Diversidade dos Seres Vivos" : "Evolução e Diversificação da Vida na Terra"}
-
-
-function getDisciplinas(url, i) {
-    // entra na ficha para pegar o cr, ca e cp
-    // detalhe importante, cada curso tem um cp associado
-    var ficha_url = url.replace('.json', '');
-    $.get( 'https://aluno.ufabc.edu.br' + ficha_url, function( data ) {
-        var ficha_obj = $($.parseHTML(data));
-        var info = ficha_obj.find('.coeficientes tbody tr td');
-        cursos[i - 1].cp = parseFloat(info[0].innerText.replace(',', '.'));
-        cursos[i - 1].cr = parseFloat(info[1].innerText.replace(',', '.'));
-        cursos[i - 1].ca = parseFloat(info[2].innerText.replace(',', '.'));
-        cursos[i - 1].quads = ficha_obj.find(".ano_periodo").length;
-        console.log(cursos[i - 1]);
-        // para ter certeza que as info de CR ja foram colocadas
-        $.get( 'https://aluno.ufabc.edu.br' + url, function( data ) {
-            // porque i - 1?
-            cursos[i - 1].cursadas = data;
-            var obj= {};
-            obj[user] = cursos;
-            chrome.storage.local.set(obj);
-            toastr.info('Salvando disciplinas do curso do ' + cursos[i - 1].curso + ' para o usuário ' + user + '.');
-        });
-    });
-
-    
+var disciplinas_mudadas = {
+    "Energia: Origens, Conversão e Uso" : "Bases Conceituais da Energia",
+    "Transformações nos Seres Vivos e Ambiente" : "Biodiversidade: Interações entre organismos e ambiente",
+    "Transformações Bioquímicas" : "Bioquímica: estrutura, propriedade e funções de Biomoléculas",
+    "Origem da Vida e Diversidade dos Seres Vivos" : "Evolução e Diversificação da Vida na Terra"
 }
-
-var TIMER;
 
 // quando carrega qualquer pagina fazemos isto
 window.addEventListener('load', function() {
-	var url = document.location.href;
-	// essa url mapeia a pagina principal da ficha individual
-    // dados_pessoais
-    if(url.indexOf('aluno.ufabc.edu.br/dados_pessoais') != -1) {
-        toastr.info("Clique em <a href='https://aluno.ufabc.edu.br/fichas_individuais' style='color: #FFF !important;'>Ficha Individual</a> para atualizar suas informações!");
-    }
-    if(url.indexOf('aluno.ufabc.edu.br/fichas_individuais') != -1) {
-        toastr.info('A mágica começa agora...');
-        // pega o email da ufabc
-        user = $('#top li').last().text().replace(/\s*/,'').split('|')[0].replace(' ','');
-    	$('tbody').children().each(function (child) {
-    		if ($(this).children('th').length == 0) {
-    			// nao estamos no header da tabela
-    			var linha = $(this).children();
-    			// 0 -> curso
-    			// 3 -> turno
-    			// 6 -> situacao
-    			var count = 0;
-                var obj = {};
-    			linha.each(function (i) {
-    				var texto = $(this).text();
-    				if (count == 0) {
-    					var texto = $(this).children('a').text();
-                        obj.curso = texto;
-    				} else if (count == 1) {
-                        var texto = $(this).children('a').attr('href');
-                        getDisciplinas(texto, child);
-                    } else if (count == 3) {
-    					obj.turno = texto;
-    				} else if (count == 6) {
-						obj.situacao = texto;
-    				};
-    				count += 1;
-    			});
-                cursos.push(obj);
-    		};
-    	});
-    };
-   // essa url mapeia a pagina principal da matricula (versao nova)
-   if(url.indexOf(real_url) != -1) {
-        //inject styles
-        injectStyles();
+    var url = document.location.href;
 
-        // send all matriculas to server
-        getAllMatriculas();
+   if(url.indexOf(matricula_url) != -1) {
+        //inject styles
+        utils.injectStyle('styles/main.css');
 
         // inject chart.js
-        injectChart();
+        utils.injectScript('bower_components/Chart.js/dist/Chart.js');
 
         // injeta modal
-        injectModal();
+        utils.injectDiv('scripts/matriculas/embeded/html_fragments/modal.html');
 
         // manda as informacoes para o servidor
         sendAlunoData();
@@ -167,7 +104,6 @@ window.addEventListener('load', function() {
             toastr.info('Pegando disciplinas de ' + current_user + '.');
             // pega as disciplinas ja cursadas
             chrome.storage.local.get(current_user, function (item) {
-                
                 if (item[current_user] == null) {
                     toastr.info('Nao temos as disciplinas que voce cursou! <a href="https://aluno.ufabc.edu.br/" target="_blank" style="color: #FFF;"> Clique aqui</a> para carrega-las.' );
                     return;
@@ -329,8 +265,6 @@ window.addEventListener('load', function() {
     // carrega professores automaticamente
     $('#loadHelp').click();
    }
-   
-
 });
 
 function criaHandlerRefresh () {
@@ -347,14 +281,8 @@ function criaHandlerSelecionadas() {
             $(".notSelecionada").css('display', '');
             return;
         };
-        // se ja tiver calculado nao refaz o trabalho
-        // if ($(".notSelecionada").length > 0) {
-        //     $(".notSelecionada").css('display', 'none');
-        //     return;
-        // }
-        // pega o id do aluno e suas disciplinas
         getAlunoId(function (aluno_id) {
-            getMatriculas(aluno_id, function (matriculas) {
+            getMatriculasAluno(aluno_id, function (matriculas) {
                 // constroi hash para iterar
                 var hash = {};
                 for (var i = 0; i < matriculas.length; i++) {
@@ -369,17 +297,6 @@ function criaHandlerSelecionadas() {
                         $(this).css('display', 'none');
                     } else if (hash[disciplina_id]) {
                         var el = $(':nth-child(5)', this);
-                        // achamos uma disciplina
-                        // deprecated
-                        // $.post(endpoint + 'simula', {disciplina_id: disciplina_id, aluno_id : aluno_id}, function( data ) {
-                        //   var html = "(" + data.pos + "/" + data.total + ") ";
-                        //   if (el.children('span').length) {
-                        //     el.children('span').html(html);
-                        //   } else {
-                        //     el.html('<span style="color: red;">' + html + '</span> ' + el.text());
-                        //   }
-                          
-                        // }); 
                     }
                 });
             })
@@ -388,72 +305,7 @@ function criaHandlerSelecionadas() {
 };
 
 
-// insire chart.js script na pagina de matricula
-function injectChart () {
-    var s = document.createElement('script');
-    s.src = chrome.extension.getURL('bower_components/Chart.js/dist/Chart.js');
-    (document.head || document.documentElement).appendChild(s); 
-}
 
-// injeta estilos proprios
-function injectStyles () {
-    var s = document.createElement("link");
-    s.href = chrome.extension.getURL("styles/main.css");
-    s.type = "text/css";
-    s.rel = "stylesheet";
-    document.head.appendChild(s); 
-}
-
-// injeta estilos proprios
-function injectModal () {
-    var div = document.createElement('div');
-    div.innerHTML = modal_html;
-    document.body.appendChild(div); 
-}
-
-function generateHTMLPie (info, id) {
-    var html = "<canvas id='pie" + id + "'></canvas><br>";
-    html += "<table class='table'><tbody><tr><td>CR Aluno</td><td><b>" + info.cr_aluno + "</b></td></tr><tr><td>CR Professor</td><td><b>" + info.cr_professor + "</b></td></tr><tr><td>Reprovacoes</td><td><b>" + info.reprovacoes + "</b></td></tr><tr><td>Trancamentos</td><td><b>" + info.trancamentos +"</b></td></tr></tbody></table>";
-    return html;
-}
-
-function generatePie(item, id){
-    var ctx = $("#pie" + id);
-
-    console.log(ctx);
-
-    var possible_colors = {"A" : "rgb(124, 181, 236)", "B" : "rgb(67, 67, 72)", "C": "rgb(144, 237, 125)", "D" : "rgb(247, 163, 92)"};
-    var possible_hover = {"A" : "rgb(149, 206, 255)", "B" : "rgb(92, 92, 97)", "C": "rgb(168, 255, 150)", "D" : "rgb(255, 188, 117)"};
-    var info = [];
-    var backColor = [];
-    var hoverColor = [];
-    var labels = [];
-
-    for (var key in item) {
-        labels.push(key);
-        info.push(item[key]);
-        backColor.push(possible_colors[key]);
-        hoverColor.push(possible_hover[key]);
-    }
-
-    var data = {
-        labels: labels,
-        datasets: [
-            {
-                data: info,
-                backgroundColor: backColor,
-                hoverBackgroundColor: hoverColor
-            }]
-    };
-
-
-    var myChart = new Chart(ctx, {
-        type: 'pie',
-        data: data
-    });
-}
-
-// pega o id do aluno (interno do matriculas)
 function getAlunoId(cb) {
     $('script').each(function () {
         var inside = $(this).text();
@@ -466,8 +318,7 @@ function getAlunoId(cb) {
     });
 }
 
-// pega a quantidade total de matriculas efetudas ate o momento
-function getMatriculasTotal(cb) {
+function getTotalMatriculas(cb) {
     // pega a quantidade total de matriculas
     $.get('https://matricula.ufabc.edu.br/cache/matriculas.js', function (data) {
         data = JSON.parse(data.replace('matriculas=', '').replace(';', ''));
@@ -476,8 +327,7 @@ function getMatriculasTotal(cb) {
     });
 }
 
-// pega as matriculas de um determinado aluno
-function getMatriculas(aluno_id, cb) {
+function getMatriculasAluno(aluno_id, cb) {
     $.get('https://matricula.ufabc.edu.br/cache/matriculas.js', function (data) {
         try {
             data = JSON.parse(data.replace('matriculas=', '').replace(';', ''));
@@ -489,29 +339,9 @@ function getMatriculas(aluno_id, cb) {
     });
 }
 
-// pega todas as matriculas e manda para o servidor
-function getAllMatriculas() {
-    $.get('https://matricula.ufabc.edu.br/cache/matriculas.js', function (data) {
-        try {
-            data = JSON.parse(data.replace('matriculas=', '').replace(';', ''));
-            // send this to the server
-            if(Object.keys(data).length > 0) {
-                // data = JSON.stringify(data);
-                // $.post( endpoint + 'update_matriculas', {data: data}, function( data ) {
-                //     console.log(data);
-                // });
-            }
-
-        } catch (err) {
-            getAllMatriculas();
-        }
-        
-    });
-}
-
 // append no documento a quantidade total de matriculas
 function appendMatriculas() {
-    getMatriculasTotal(function (quantidade) {
+    getTotalMatriculas(function (quantidade) {
         var html = '<p class="bg-success">Foram efetuadas <span id="matriculasTotal">' + quantidade + '</span> matriculas até o momento. <img width="20px" id="refreshMatriculas" style="cursor: pointer;" src="' + chrome.extension.getURL('images/refresh_small.png') +'"/></p>';
         $('form').before(html);
          // cria handler para materias selecionadas
@@ -520,7 +350,7 @@ function appendMatriculas() {
 }
 
 function updateMatriculasTotal() {
-    getMatriculasTotal(function (quantidade) {
+    getTotalMatriculas(function (quantidade) {
         $("#matriculasTotal").html(quantidade);
     })
 }
@@ -605,45 +435,6 @@ function handlerCortes(){
 
     })
 }
-
-var modal_html = '<div class="modal fade" id="modalCortes"> \
-<div class="modal-dialog"> \
-      <div class="modal-content"> \
-        <div class="modal-header"> \
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button> \
-          <h3 class="modal-title"></h3> \
-          <div class="row"> \
-            <div class="col-md-12 text-center" id="previsao"> \
-               <button class="btn">Legenda de cores: </button> \
-               <button class="btn btn-info">Previsão de corte</button> \
-               <button class="btn btn-danger">Corte real</button> \
-               <button class="btn btn-warning">Sua posição</button> \
-            </div> \
-            </div> \
-        </div> \
-        <div class="modal-body"> \
-          <table class="table table-striped" id="tblGrid"> \
-            <thead id="tblHead"> \
-              <tr> \
-                <th>Ranking</th> \
-                <th>Reserva de vaga</th> \
-                <th>Turno</th> \
-                <th>Ik</th> \
-                <th>CP</th> \
-                <th>CR</th> \
-              </tr> \
-            </thead> \
-            <tbody> \
-              <tr><td></td> \
-                <td></td> \
-                <td class="text-right"></td> \
-              </tr> \
-            </tbody> \
-          </table> \
-        </div>   \
-      </div><!-- /.modal-content --> \
-    </div><!-- /.modal-dialog --> \
-  </div><!-- /.modal -->'
 
 function sameHandlers() {
     $('#andre').click(function (e) {
@@ -743,6 +534,4 @@ function sameHandlers() {
             }
         })
     });
-
-    
 }

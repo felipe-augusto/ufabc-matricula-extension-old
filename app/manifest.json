@@ -18,20 +18,24 @@
     "tabs",
     "storage",
     "http://*.ufabc.edu.br/*",
-    "https://*.ufabc.edu.br/*"
+    "https://*.ufabc.edu.br/*",
+    "http://localhost:8000/*"
   ],
   "content_scripts": [
     {
       "matches": [
         "http://*.ufabc.edu.br/*",
-        "https://*.ufabc.edu.br/*"
+        "https://*.ufabc.edu.br/*",
+        "http://localhost:8000/*"
       ],
       "js": [
         "bower_components/jquery/dist/jquery.min.js",
         "bower_components/Chart.js/dist/Chart.js",
         "bower_components/toastr/toastr.min.js",
         "bower_components/webui-popover/dist/jquery.webui-popover.min.js",
-
+        "scripts/lib/utils.js",
+        "scripts/lib/pie.js",
+        "scripts/portal_aluno/portal.js",
         "scripts/contentscript.js"
       ],
       "css" : [
@@ -53,6 +57,7 @@
   "web_accessible_resources": [
     "bower_components/*",
     "images/*",
-    "styles/*"
+    "styles/*",
+    "scripts/*"
   ]
 }
