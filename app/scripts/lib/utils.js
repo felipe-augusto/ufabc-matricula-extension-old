@@ -35,6 +35,7 @@ var utils = new (function (){
 		getChromeUrl: getChromeUrl,
 		injectScript: injectScript,
 		injectDiv: injectDiv,
-		injectStyle: injectStyle
+		injectStyle: injectStyle,
+    fetchChromeUrl: fetchChromeUrl
 	}
 })();

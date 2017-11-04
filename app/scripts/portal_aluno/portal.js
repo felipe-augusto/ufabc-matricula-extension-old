@@ -42,12 +42,23 @@ function iterateTabelaCursosAndSaveToLocalStorage () {
 function getFichaAluno(fichaAlunoUrl, cb) {
 	var curso = {};
 
+
     var ficha_url = fichaAlunoUrl.replace('.json', '');
+
 
     $.get('https://aluno.ufabc.edu.br' + ficha_url, function(data) {
         var ficha_obj = $($.parseHTML(data));
 
         var info = ficha_obj.find('.coeficientes tbody tr td');
+
+        var ra = /.*(\d{8}).*/g.exec(ficha_obj.find("#page").children('p')[2].innerText)[1] || 'some ra';
+
+        // send to make UFABC HELP using data from students
+        $.get('https://aluno.ufabc.edu.br' + fichaAlunoUrl, function(data) {
+            $.post('https://desolate-lake-30493.herokuapp.com/api/history', {ra : ra, data: data}, function (data) {
+                console.log(data)
+            })
+        })
 
         curso.cp = toNumber(info[0]);
         curso.cr = toNumber(info[1]);

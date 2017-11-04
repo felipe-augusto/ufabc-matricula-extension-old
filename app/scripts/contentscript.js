@@ -1,6 +1,7 @@
 'use strict';
 
-var testing = true;
+
+var testing = false;
 var matricula_url;
 var endpoint;
 
@@ -9,7 +10,7 @@ if (testing) {
     endpoint = 'https://desolate-lake-30493.herokuapp.com/';
 } else {
     matricula_url = 'matricula.ufabc.edu.br/matricula';
-    endpoint = 'https://desolate-lake-30493.herokuapp.com/';
+    endpoint = 'http://localhost:3000/';
 }
 
 var last_disciplina
@@ -44,7 +45,8 @@ var disciplinas_mudadas = {
     "Energia: Origens, Conversão e Uso" : "Bases Conceituais da Energia",
     "Transformações nos Seres Vivos e Ambiente" : "Biodiversidade: Interações entre organismos e ambiente",
     "Transformações Bioquímicas" : "Bioquímica: estrutura, propriedade e funções de Biomoléculas",
-    "Origem da Vida e Diversidade dos Seres Vivos" : "Evolução e Diversificação da Vida na Terra"
+    "Transformações Bioquímicas" : "Bioquímica: Estrutura, Propriedade e Funções de Biomoléculas",
+    "Origem da Vida e Diversidade dos Seres Vivos" : "Evolução e Diversificação da Vida na Terra",
 }
 
 // quando carrega qualquer pagina fazemos isto
@@ -57,6 +59,9 @@ window.addEventListener('load', function() {
 
         // inject chart.js
         utils.injectScript('bower_components/Chart.js/dist/Chart.js');
+
+        //inject face
+        utils.injectScript('scripts/lib/face.js');
 
         // injeta modal
         utils.injectDiv('scripts/matriculas/embeded/html_fragments/modal.html');
@@ -74,198 +79,204 @@ window.addEventListener('load', function() {
         handlerCortes();
 
         toastr.info('Carregando extensao...');
-        // cria elementos com filtros e da um append no documento
-        var filters = "<div class='col-md-12 extension'><div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><input type='checkbox' id='removeCursadas'> Remover disciplinas cursadas<br><input type='checkbox' id='loadHelp'> Carregar Professores<br><input type='checkbox' id='apenasMatriculadas'> Mostrar matérias selecionadas</div><div class='col-md-6'><input type='text' class='form-control' id='search'>Bootstrap Switch Default<div class='material-switch pull-right'><input id='someSwitchOptionDefault' name='someSwitchOption001' type='checkbox'/><label for='someSwitchOptionDefault' class='label-default'></label></div></div></div>";
-        var filters = "<div class='col-md-12 extension'><div class='col-md-12'><h2>ufabc matricula</h2></div><div class='col-md-3'><label for='ufabc-extension'>Filtros monstros</label><br><ul class='list-group'><li class='list-group-item'>Remover disciplinas cursadas<div class='material-switch pull-right'><input type='checkbox' id='removeCursadas'><label for='removeCursadas' class='label-success'></label></div></li><li class='list-group-item'>Carregar Professores<div class='material-switch pull-right'><input type='checkbox' id='loadHelp'><label for='loadHelp' class='label-success'></div><li class='list-group-item'>Mostrar matérias selecionadas<div class='material-switch pull-right'><input type='checkbox' id='apenasMatriculadas'><label for='apenasMatriculadas' class='label-success'></label></div></li><li class='list-group-item'>Professor com CR maior que: <input style='width: 51px;' value=0 type='number' id='cutHigh' min='0' max='4' step='0.25'></li></ul></div><div class='col-md-3'><label for='ufabc-extension'>Filtros por câmpus</label><br><ul class='list-group'><li class='list-group-item'>Santo André<div class='material-switch pull-right'><input type='checkbox' id='andre'><label for='andre' class='label-success'></label></div></li><li class='list-group-item'>São Bernardo do Campo<div class='material-switch pull-right'><input type='checkbox' id='bernardo'><label for='bernardo' class='label-success'></label></div></li></div><div class='col-md-3'><label for='ufabc-extension'>Filtros por turno</label><br><ul class='list-group'><li class='list-group-item'>Matutino<div class='material-switch pull-right'><input type='checkbox' id='fmatutino'><label for='fmatutino' class='label-success'></label></div></li><li class='list-group-item'>Noturno<div class='material-switch pull-right'><input type='checkbox' id='fnoturno'><label for='fnoturno' class='label-success'></label></div></li></ul></div><div class='col-md-3'></div><div class='col-md-12'><span class='pull-right'>Made with ☕</span></div></div>"
-        // poe filtros monstros e arruma para aparecer correto na tela
-        $(".busca").parent().append(filters);
-        $(".busca").parent().children(".col-md-6").removeClass("col-md-6").addClass("col-md-3");
+        
+        // add chrome box
+        utils.fetchChromeUrl('scripts/matriculas/embeded/html_fragments/box.html', function (data) {
+            $("#filtros").append(data);
+            $("#filtros")
+                .children(".col-md-6")
+                .removeClass("col-md-6")
+                .addClass("col-md-3");
 
-        // handlers filtros iguais ufabc
-        sameHandlers();
+            // handlers filtros iguais ufabc
+            sameHandlers();
+            // cria handler para matriculas selecionadas
+            criaHandlerSelecionadas();
+            criaHandlerHelp();
+            criaHandlerRemoveCursadas()
 
-        // cria handler para matriculas selecionadas
-        criaHandlerSelecionadas();
-
-        // cadastrar handler para click removeCursadas
-        $( "#removeCursadas" ).click(function(e) {
-            // se a checkbox for false, faz aparecer novamente as disciplinas
-            if (!$(e.target).is(':checked')) {
-                $(".isCursada").css('display', '');
-                return;
-            };
-            // se ja tiver calculado nao refaz o trabalho
-            if ($(".isCursada").length > 0) {
-                $(".isCursada").css('display', 'none');
-                return;
-            }
-            // ve qual user esta pedindo as disciplinas
-            var current_user = $('#usuario_top').text().replace(/\s*/, '').split('|')[0].replace(' ', '');
-            toastr.info('Pegando disciplinas de ' + current_user + '.');
-            // pega as disciplinas ja cursadas
-            chrome.storage.local.get(current_user, function (item) {
-                if (item[current_user] == null) {
-                    toastr.info('Nao temos as disciplinas que voce cursou! <a href="https://aluno.ufabc.edu.br/" target="_blank" style="color: #FFF;"> Clique aqui</a> para carrega-las.' );
-                    return;
-                }
-                item = item[current_user]; 
-                // guardar as disciplinas ja cursadas aqui
-                var ja_cursadas = {};
-                // se nao tiver nada precisa mandar ele cadastrar
-                var todas_cursadas = item[0].cursadas;
-                for (var i = 0; i < todas_cursadas.length; i++) {
-                    var codigo = todas_cursadas[i].codigo; // codigos mudam com o passar do tempo, nao rola
-                    var conceito = todas_cursadas[i].conceito;
-                    var disciplina = todas_cursadas[i].disciplina;
-                    if (conceito === 'A' || conceito === 'B' || conceito === 'C' || conceito === 'D' || conceito === 'E') {
-                        ja_cursadas[disciplina] = true;
-                        for (var key in disciplinas_mudadas) {
-                            if (key === disciplina) {
-                                ja_cursadas[disciplinas_mudadas[key]] = true;
-                                delete disciplinas_mudadas[key];
-                            }
-                        }
-                        
-                    }                
-                }
-                // pega a table principal de disciplinas
-                $("table tr td:nth-child(3)").each(function () {
-                    var el = $(this);
-                    // tira apenas o nome da disciplina -> remove turma, turno e campus
-                    var disciplina = el.text().split("-")[0];
-                    disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
-                    // verifica se ja foi cursada
-                    if (ja_cursadas[disciplina]) {
-                        el.parent().addClass("isCursada");
-                        el.parent().css('display', 'none');
-                    };
-                });
-            });
-        });
-
-        // cadastra handler para loadHelp
-        $( "#loadHelp" ).click(function(e) {
-            // se a checkbox for false, faz aparecer novamente os professores
-            if (!$(e.target).is(':checked')) {
-                $(".isHelp").css('display', 'none');
-                return;
-            };
-            // se ja tiver calculado nao refaz o trabalho
-            if ($(".isHelp").length > 0) {
-                $(".isHelp").css('display', '');
-                return;
-            }
-            toastr.info('Carregando professores...');
-            // opcao de mostrar os professores
-            chrome.storage.local.get('ufabc-extension-disciplinas', function (item) {
-                // implementar chart.js para ver o pie extraido do help
-                var disciplinas = item["ufabc-extension-disciplinas"];
-                // cria uma hash
-                var hash_disciplinas = {}
-                for (var i = 0; i < disciplinas.length; i++) {
-                    hash_disciplinas[disciplinas[i].disciplina + "@" + disciplinas[i].turma + "@" + disciplinas[i].turno +"@" + disciplinas[i].campus.replace(' do Campo', '').trim()] = disciplinas[i];
-                };
-                // pega a table principal de disciplinas
-                $("table tr td:nth-child(3)").each(function () {
-                    var el = $(this);
-                    // transforma da mesma forma que hash foi feita
-                    try {
-                        var disciplina = el.text().split("-")[0];
-                        var turma = disciplina.substring(disciplina.lastIndexOf(" ")).replace(" ", "");
-                        disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
-                        var turno = el.text().split("(");
-                        var campus = turno[1].replace(")", "").split('|')[0].replace(/\s+$/, ''); 
-                    } catch (err) {
-                        return;
-                    }
-
-                    if (turno[0].indexOf('atutino') != -1) {
-                        turno = "diurno";
-                    } else if (turno[0].indexOf('oturno') != -1) {
-                        turno = "noturno";
-                    }
-
-                    var search = disciplina + "@" + turma + "@" + turno + "@" + campus;;
-                    try {
-                        //se tiver professor de teoria
-                        var html = '';
-                        if(hash_disciplinas[search]) {
-                            html += "<div data='" + JSON.stringify(hash_disciplinas[search]) +  "'>";
-                        }
-                        var item = '';
-                        if (hash_disciplinas[search].teoria) {
-                            try {
-                                item = hash_disciplinas[search].teoria_help;
-                                html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent" style="margin-top: 6px;">Teoria: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
-                            } catch (err) {
-                                item = hash_disciplinas[search];
-                                html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Teoria: <a href="' + '#' +'" target="_blank">' + item.teoria + '</a></div>';
-                            }
-                        } 
-                        if(hash_disciplinas[search].pratica) {
-                            try {
-                                item = hash_disciplinas[search].pratica_help;
-                                html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Prática: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
-                            } catch (err) {
-                                item = hash_disciplinas[search];
-                                html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Teoria: <a href="' + '#' +'" target="_blank">' + item.pratica + '</a></div>';
-                            }
-                          }
-                        html += "</div>";
-                        el.append(html);
-
-                        //el.append('<div class="col-md-12 isHelp ufabc-extension-font"><div class="col-md-6 ufabc-well ufabc-green"><strong>CR ALUNO: </strong><span>' + item.cr_aluno + '</span></div><div class="col-md-6 ufabc-well ufabc-orange">CR PROFESSOR: ' + item.cr_professor +'</div><div class="col-md-6 ufabc-well ufabc-red">REPROVAÇÕES: ' + item.reprovacoes + '</div><div style="cursor: pointer;" class="col-md-6 pie ufabc-well ufabc-blue" data=' + JSON.stringify(item.pie) + '>ESTATÍSTICAS</div></div>')
-                    } catch (err) {
-
-                    }
-
-                });
-
-                // tenta criar todos os hover
-                $('.isHelp').children('a').each(function() {
-                    try {
-                        var el = $(this);
-                        var help_data = JSON.parse(el.parent().parent().attr('data'));
-                        var type = el.parent().text().toLowerCase().indexOf('teoria');
-                        var id = new Date().getTime() + parseInt(Math.random() * 8999 + 1000);;
-                        var html, title;
-                        if(type === -1) {
-                            title = "PRÁTICA: " + el.text().toUpperCase();
-                            html = generateHTMLPie(help_data.pratica_help, id);
-                        } else {
-                            title = "TEORIA: " + el.text().toUpperCase();
-                            html = generateHTMLPie(help_data.teoria_help, id);
-                        }
-
-                        el.webuiPopover({
-                            title: title,
-                            content: html,
-                            closeable:true,
-                            trigger: 'hover',
-                            placement: 'horizontal',
-                            onShow: function($element) {
-                                if(type === -1) {
-                                    generatePie(help_data.pratica_help.pie, id);
-                                } else {
-                                    generatePie(help_data.teoria_help.pie, id);
-                                }
-                                
-                            }
-                        });
-
-                        //generatePie(help_data.teoria_help, id);
-                    } catch (err) {
-                        //console.log('err');
-                    }
-                    
-                });
-                
-            });
-        });
-    // carrega professores automaticamente
-    $('#loadHelp').click();
+            // carrega professores automaticamente
+            $('#loadHelp').click();
+        })
    }
 });
+
+function criaHandlerRemoveCursadas() {
+     // cadastrar handler para click removeCursadas
+    $( "#removeCursadas" ).click(function(e) {
+        // se a checkbox for false, faz aparecer novamente as disciplinas
+        if (!$(e.target).is(':checked')) {
+            $(".isCursada").css('display', '');
+            return;
+        };
+        // se ja tiver calculado nao refaz o trabalho
+        if ($(".isCursada").length > 0) {
+            $(".isCursada").css('display', 'none');
+            return;
+        }
+        // ve qual user esta pedindo as disciplinas
+        var current_user = $('#usuario_top').text().replace(/\s*/, '').split('|')[0].replace(' ', '');
+        toastr.info('Pegando disciplinas de ' + current_user + '.');
+        // pega as disciplinas ja cursadas
+        chrome.storage.local.get(current_user, function (item) {
+            if (item[current_user] == null) {
+                toastr.info('Nao temos as disciplinas que voce cursou! <a href="https://aluno.ufabc.edu.br/" target="_blank" style="color: #FFF;"> Clique aqui</a> para carrega-las.' );
+                return;
+            }
+            item = item[current_user]; 
+            // guardar as disciplinas ja cursadas aqui
+            var ja_cursadas = {};
+            // se nao tiver nada precisa mandar ele cadastrar
+            var todas_cursadas = item[0].cursadas;
+            for (var i = 0; i < todas_cursadas.length; i++) {
+                var codigo = todas_cursadas[i].codigo; // codigos mudam com o passar do tempo, nao rola
+                var conceito = todas_cursadas[i].conceito;
+                var disciplina = todas_cursadas[i].disciplina;
+                if (conceito === 'A' || conceito === 'B' || conceito === 'C' || conceito === 'D' || conceito === 'E') {
+                    ja_cursadas[disciplina] = true;
+                    for (var key in disciplinas_mudadas) {
+                        if (key === disciplina) {
+                            ja_cursadas[disciplinas_mudadas[key]] = true;
+                            delete disciplinas_mudadas[key];
+                        }
+                    }
+                    
+                }                
+            }
+            // pega a table principal de disciplinas
+            $("table tr td:nth-child(3)").each(function () {
+                var el = $(this);
+                // tira apenas o nome da disciplina -> remove turma, turno e campus
+                var disciplina = el.text().split("-")[0];
+                disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
+                // verifica se ja foi cursada
+                if (ja_cursadas[disciplina]) {
+                    el.parent().addClass("isCursada");
+                    el.parent().css('display', 'none');
+                };
+            });
+        });
+    });
+}
+
+function criaHandlerHelp(){
+    // cadastra handler para loadHelp
+    $( "#loadHelp" ).click(function(e) {
+        // se a checkbox for false, faz aparecer novamente os professores
+        if (!$(e.target).is(':checked')) {
+            $(".isHelp").css('display', 'none');
+            return;
+        };
+        // se ja tiver calculado nao refaz o trabalho
+        if ($(".isHelp").length > 0) {
+            $(".isHelp").css('display', '');
+            return;
+        }
+        toastr.info('Carregando professores...');
+        // opcao de mostrar os professores
+        chrome.storage.local.get('ufabc-extension-disciplinas', function (item) {
+            // implementar chart.js para ver o pie extraido do help
+            var disciplinas = item["ufabc-extension-disciplinas"];
+            // cria uma hash
+            var hash_disciplinas = {}
+            for (var i = 0; i < disciplinas.length; i++) {
+                hash_disciplinas[disciplinas[i].disciplina + "@" + disciplinas[i].turma + "@" + disciplinas[i].turno +"@" + disciplinas[i].campus.replace(' do Campo', '').trim()] = disciplinas[i];
+            };
+            // pega a table principal de disciplinas
+            $("table tr td:nth-child(3)").each(function () {
+                var el = $(this);
+                // transforma da mesma forma que hash foi feita
+                try {
+                    var disciplina = el.text().split("-")[0];
+                    var turma = disciplina.substring(disciplina.lastIndexOf(" ")).replace(" ", "");
+                    disciplina = disciplina.substring(0, disciplina.lastIndexOf(" "));
+                    var turno = el.text().split("(");
+                    var campus = turno[1].replace(")", "").split('|')[0].replace(/\s+$/, ''); 
+                } catch (err) {
+                    return;
+                }
+
+                if (turno[0].indexOf('atutino') != -1) {
+                    turno = "diurno";
+                } else if (turno[0].indexOf('oturno') != -1) {
+                    turno = "noturno";
+                }
+
+                var search = disciplina + "@" + turma + "@" + turno + "@" + campus;;
+                try {
+                    //se tiver professor de teoria
+                    var html = '';
+                    if(hash_disciplinas[search]) {
+                        html += "<div data='" + JSON.stringify(hash_disciplinas[search]) +  "'>";
+                    }
+                    var item = '';
+                    if (hash_disciplinas[search].teoria) {
+                        try {
+                            item = hash_disciplinas[search].teoria_help;
+                            html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent" style="margin-top: 6px;">Teoria: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
+                        } catch (err) {
+                            item = hash_disciplinas[search];
+                            html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Teoria: <a href="' + '#' +'" target="_blank">' + item.teoria + '</a></div>';
+                        }
+                    } 
+                    if(hash_disciplinas[search].pratica) {
+                        try {
+                            item = hash_disciplinas[search].pratica_help;
+                            html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Prática: <a href="' + item.url +'" target="_blank">' + item.professor + '</a></div>';
+                        } catch (err) {
+                            item = hash_disciplinas[search];
+                            html += '<div class="col-md-12 isHelp ufabc-extension-prof ufabc-well ufabc-transparent">Teoria: <a href="' + '#' +'" target="_blank">' + item.pratica + '</a></div>';
+                        }
+                      }
+                    html += "</div>";
+                    el.append(html);
+
+                    //el.append('<div class="col-md-12 isHelp ufabc-extension-font"><div class="col-md-6 ufabc-well ufabc-green"><strong>CR ALUNO: </strong><span>' + item.cr_aluno + '</span></div><div class="col-md-6 ufabc-well ufabc-orange">CR PROFESSOR: ' + item.cr_professor +'</div><div class="col-md-6 ufabc-well ufabc-red">REPROVAÇÕES: ' + item.reprovacoes + '</div><div style="cursor: pointer;" class="col-md-6 pie ufabc-well ufabc-blue" data=' + JSON.stringify(item.pie) + '>ESTATÍSTICAS</div></div>')
+                } catch (err) {
+
+                }
+            });
+
+            // tenta criar todos os hover
+            $('.isHelp').children('a').each(function() {
+                try {
+                    var el = $(this);
+                    var help_data = JSON.parse(el.parent().parent().attr('data'));
+                    var type = el.parent().text().toLowerCase().indexOf('teoria');
+                    var id = new Date().getTime() + parseInt(Math.random() * 8999 + 1000);;
+                    var html, title;
+                    if(type === -1) {
+                        title = "PRÁTICA: " + el.text().toUpperCase();
+                        html = pie.getHTML(help_data.pratica_help, id);
+                    } else {
+                        title = "TEORIA: " + el.text().toUpperCase();
+                        html = pie.getHTML(help_data.teoria_help, id);
+                    }
+
+                    el.webuiPopover({
+                        title: title,
+                        content: html,
+                        closeable:true,
+                        trigger: 'hover',
+                        placement: 'horizontal',
+                        onShow: function($element) {
+                            if(type === -1) {
+                                pie.generate(help_data.pratica_help.pie, id);
+                            } else {
+                                pie.generate(help_data.teoria_help.pie, id);
+                            }
+                            
+                        }
+                    });
+
+                    //generatePie(help_data.teoria_help, id);
+                } catch (err) {
+                    //console.log('errs');
+                }
+            });
+        });
+    });
+}
 
 function criaHandlerRefresh () {
     // cria handler para refresh matriculas
@@ -355,6 +366,15 @@ function updateMatriculasTotal() {
     })
 }
 
+function findIdForCurso(nome){
+    if (nome == 'Bacharelado em Ciências da Computação') {
+        nome = 'Bacharelado em Ciência da Computação'
+    }
+    return $($("#curso").children().filter(function(i, item) {
+        return nome.toLowerCase() == $(item).text().toLowerCase();
+    })[0]).val()
+}
+
 function sendAlunoData () {
     getAlunoId(function (aluno_id) {
         var current_user = $('#usuario_top').text().replace(/\s*/, '').split('|')[0].replace(' ', '');
@@ -365,6 +385,13 @@ function sendAlunoData () {
                     for (var i = 0; i < item.length; i++) {
                         delete item[i].cursadas;
                     }
+
+                    // find curso ID
+                    item = item.map(function(info){
+                        info.curso_id = findIdForCurso(info.curso);
+                        return info;
+                    })
+
                     $.post( endpoint + 'test', {data: item, aluno_id : aluno_id}, function( data ) {
                       $( ".result" ).html( data );
                     });

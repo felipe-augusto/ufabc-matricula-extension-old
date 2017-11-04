@@ -1,6 +1,6 @@
 var pie = new (function (){
 	function getHTML (info, id) {
-	    var html = "<canvas id='pie" + id + "'></canvas><br>";
+	    var html = "<canvas id='pie" + id + "' width='200px'></canvas><br>";
 	    html += "<table class='table'><tbody><tr><td>CR Aluno</td><td><b>" + info.cr_aluno + "</b></td></tr><tr><td>CR Professor</td><td><b>" + info.cr_professor + "</b></td></tr><tr><td>Reprovacoes</td><td><b>" + info.reprovacoes + "</b></td></tr><tr><td>Trancamentos</td><td><b>" + info.trancamentos +"</b></td></tr></tbody></table>";
 	    return html;
 	}

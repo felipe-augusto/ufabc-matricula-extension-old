@@ -1,6 +1,6 @@
 {
   "name": "UFABC Matricula",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "manifest_version": 2,
   "description": "Adiciona funcionalidades novas ao sistema de matricula da UFABC.",
   "icons": {
@@ -34,6 +34,7 @@
         "bower_components/toastr/toastr.min.js",
         "bower_components/webui-popover/dist/jquery.webui-popover.min.js",
         "scripts/lib/utils.js",
+        "scripts/lib/face.js",
         "scripts/lib/pie.js",
         "scripts/portal_aluno/portal.js",
         "scripts/contentscript.js"
